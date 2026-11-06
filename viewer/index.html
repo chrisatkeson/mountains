@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sangre de Cristo 1 m DEM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0d10; color: #ddd; font: 13px/1.4 -apple-system, system-ui, sans-serif; overflow: hidden; }
+  #c { display: block; width: 100%; height: 100%; }
+  #panel { position: absolute; top: 12px; left: 12px; background: rgba(15,17,22,.85); border: 1px solid #333; border-radius: 8px; padding: 12px 14px; width: 270px; backdrop-filter: blur(6px); }
+  #panel h1 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+  #panel label { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; gap: 8px; }
+  #panel label > span:first-child { white-space: nowrap; }
+  #panel input[type=range] { flex: 1; min-width: 0; }
+  #panel select { background: #1b1e25; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 2px 4px; }
+  #panel button { background: #1b1e25; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+  #panel .val { width: 44px; text-align: right; color: #9ab; font-variant-numeric: tabular-nums; }
+  #readout { position: absolute; bottom: 12px; left: 12px; background: rgba(15,17,22,.85); border: 1px solid #333; border-radius: 8px; padding: 8px 12px; font-variant-numeric: tabular-nums; min-width: 260px; }
+  #status { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; color: #9ab; pointer-events: none; }
+  .muted { color: #889; font-size: 12px; margin-bottom: 4px; }
+  kbd { background: #222; border: 1px solid #444; border-radius: 3px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="status">Loading terrain…</div>
+<div id="panel">
+  <h1 id="title">Terrain</h1>
+  <div class="muted" id="desc"></div>
+  <label><span>Exaggeration</span><input id="exag" type="range" min="0.5" max="4" step="0.1" value="1"><span class="val" id="exagv">1.0×</span></label>
+  <label><span>Mesh detail</span>
+    <select id="detail">
+      <option value="8">Low</option>
+      <option value="4">Medium</option>
+      <option value="2" selected>High</option>
+      <option value="1">Full (1 m near camera)</option>
+    </select>
+  </label>
+  <label><span>Texture</span>
+    <select id="tex">
+      <option value="naip">Aerial imagery (NAIP)</option>
+      <option value="color">Hillshade + tint</option>
+      <option value="shade">Hillshade only</option>
+      <option value="none">Lit surface</option>
+    </select>
+  </label>
+  <label title="Lighting applies to the hillshade and lit-surface textures; aerial imagery is shown unlit"><span>Sun azimuth</span><input id="az" type="range" min="0" max="360" step="1" value="315"><span class="val" id="azv">315°</span></label>
+  <label><span>Sun altitude</span><input id="alt" type="range" min="5" max="85" step="1" value="40"><span class="val" id="altv">40°</span></label>
+  <label><span>Wireframe</span><input id="wire" type="checkbox"></label>
+  <div class="muted">Drag to orbit · right-drag to pan · wheel to zoom · <kbd>R</kbd> reset · <kbd>T</kbd> top-down</div>
+  <div class="muted"><b>Click</b> a point to stand there. On the ground: drag to look, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk, <kbd>Shift</kbd> run, wheel zooms, <kbd>Esc</kbd> returns.</div>
+  <button id="exitGround" style="display:none;margin-top:6px">Back to map view (Esc)</button>
+  <div class="muted" id="stats"></div>
+</div>
+<div id="readout">Hover over the terrain for coordinates.</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const status = msg => { const s = $('status'); if (s) s.textContent = msg; };
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); $('readout').textContent = 'WebGL context lost (out of GPU memory?). Reload the page.'; });
+const scene = new THREE.Scene();
+const SKY = new THREE.Color(0x9fc3ec), DARK = new THREE.Color(0x0b0d10);
+scene.background = DARK;
+const camera = new THREE.PerspectiveCamera(50, 1, 10, 500000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI / 2 - 0.01;
+
+// ---- Data ------------------------------------------------------------------
+const meta = await (await fetch('data/meta.json', { cache: 'no-cache' })).json();
+const W = meta.width, H = meta.height, cs = meta.cellsize;       // coarse grid, kept on the CPU for picking
+const zrange = meta.zmax - meta.zmin, zmid = (meta.zmin + meta.zmax) / 2;
+const sizeX = meta.extent_m.x, sizeY = meta.extent_m.y;
+document.title = meta.name;
+$('title').textContent = meta.name;
+
+status('Loading tile index…');
+const index = await (await fetch('data/tiles/index.json', { cache: 'no-cache' })).json();
+const T = index.tileSize, TA = T + 2 * index.apron, levels = index.levels, TOP = levels.length - 1;
+const base = levels[0].cell;
+$('desc').textContent = `${meta.source}, ${meta.tiles.length} tiles. ${(sizeX / 1000).toFixed(0)} × ${(sizeY / 1000).toFixed(0)} km, ` +
+  `${meta.zmin.toFixed(0)}–${meta.zmax.toFixed(0)} m. Streaming ${base} m tiles, ${levels.length} levels.` +
+  (meta.naip && meta.naip_credit ? ` Imagery: ${meta.naip_credit}.` : '');
+
+status('Loading coarse heightmap…');
+// The grid size is part of the URL so a rebuilt heightmap can never be read from a stale cache.
+const hbuf = await (await fetch(`data/heightmap.bin?v=${W}x${H}`)).arrayBuffer();
+if (hbuf.byteLength !== W * H * 2) {
+  status(`heightmap.bin is ${hbuf.byteLength} bytes but meta.json describes ${W}×${H} (${W * H * 2} bytes). Rebuild with process_dem.py or hard-reload.`);
+  throw new Error('heightmap size mismatch');
+}
+const q = new Uint16Array(hbuf);
+const z = new Float32Array(q.length);           // coarse elevation in metres, NaN where nodata
+for (let i = 0; i < q.length; i++) z[i] = q[i] === 0 ? NaN : meta.zmin + (q[i] - 1) / 65534 * zrange;
+
+// ---- Shaders ---------------------------------------------------------------
+// Every tile is drawn with one shared grid geometry whose vertices carry only
+// (i, j, skirtFlag). The vertex shader reads elevation from the tile's own
+// heightmap texture; the fragment shader derives the normal from neighbouring
+// texels (the tile's 1-cell apron makes that exact at the edges).
+const decode = `
+  float cellHeight(ivec2 c) {
+    c = clamp(c, ivec2(0), ivec2(${TA - 1}));
+    vec2 t = texelFetch(hmap, c, 0).rg;
+    float q = t.r * 255.0 + t.g * 65280.0;
+    return tzmin + (max(q, 1.0) - 1.0) / 65534.0 * tzrange;
+  }`;
+const vert = `
+  uniform sampler2D hmap; uniform float tzmin, tzrange, zmid, exag, skirt, cell;
+  uniform vec2 extent, origin; uniform vec3 uvXform;
+  out vec2 vUv; out vec2 vUvTile; out vec2 vCell; out float vValid; out vec3 vWorld;
+  ${decode}
+  void main() {
+    vec2 sTile = (position.xy / ${T}.0) * uvXform.z + uvXform.xy;   // position within the imagery tile, y south
+    vUvTile = vec2(sTile.x, 1.0 - sTile.y);
+    ivec2 c = ivec2(position.xy) + ${index.apron};
+    vec2 t = texelFetch(hmap, c, 0).rg;
+    vValid = (t.r * 255.0 + t.g * 65280.0) > 0.5 ? 1.0 : 0.0;
+    vec3 p = vec3(origin.x + position.x * cell, (cellHeight(c) - zmid) * exag - position.z * skirt, origin.y + position.y * cell);
+    vCell = position.xy; vWorld = p;
+    vUv = vec2((p.x + extent.x * 0.5) / extent.x, 1.0 - (p.z + extent.y * 0.5) / extent.y);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }`;
+const frag = `
+  uniform sampler2D hmap; uniform sampler2D map; uniform bool useMap, tiled, lit, fogOn;
+  uniform float tzmin, tzrange, cell, exag, sunI, ambI;
+  uniform vec3 baseColor, sunDir, fogColor; uniform vec2 fogRange;
+  in vec2 vUv; in vec2 vUvTile; in vec2 vCell; in float vValid; in vec3 vWorld;
+  out vec4 fragColor;
+  ${decode}
+  void main() {
+    if (vValid < 0.999) discard;
+    ivec2 c = ivec2(vCell + 0.5) + ${index.apron};
+    float dx = (cellHeight(c + ivec2(1, 0)) - cellHeight(c - ivec2(1, 0))) * exag / (2.0 * cell);
+    float dz = (cellHeight(c + ivec2(0, 1)) - cellHeight(c - ivec2(0, 1))) * exag / (2.0 * cell);
+    vec3 n = normalize(vec3(-dx, 1.0, -dz));
+    vec3 col = useMap ? texture(map, tiled ? vUvTile : vUv).rgb : baseColor;
+    if (lit) col *= ambI + sunI * max(dot(n, sunDir), 0.0);
+    if (fogOn) col = mix(col, fogColor, smoothstep(fogRange.x, fogRange.y, distance(vWorld, cameraPosition)));
+    fragColor = vec4(col, 1.0);
+  }`;
+const U = {   // uniforms shared by every tile material (same objects, so one update reaches all)
+  tzmin: { value: index.zmin }, tzrange: { value: index.zrange }, zmid: { value: zmid },
+  exag: { value: 1 }, extent: { value: new THREE.Vector2(sizeX, sizeY) },
+  lit: { value: true },
+  baseColor: { value: new THREE.Color(0xb8a98a) }, sunDir: { value: new THREE.Vector3(0, 1, 0) },
+  sunI: { value: 1.1 }, ambI: { value: 0.35 },
+  fogOn: { value: false }, fogColor: { value: SKY.clone() }, fogRange: { value: new THREE.Vector2(15000, 90000) },
+};
+
+// Shared tile grid: (T+1)² vertices plus a skirt ring, 32-bit indices.
+const grid = (() => {
+  const n = T + 1, pos = [], idx = [];
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) pos.push(i, j, 0);
+  for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) {
+    const a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+    idx.push(a, c, b, b, c, d);
+  }
+  const edges = [[...Array(n)].map((_, i) => i), [...Array(n)].map((_, i) => (n - 1) * n + i),
+                 [...Array(n)].map((_, j) => j * n), [...Array(n)].map((_, j) => j * n + n - 1)];
+  for (const e of edges) {
+    const b0 = pos.length / 3;
+    for (const v of e) pos.push(pos[v * 3], pos[v * 3 + 1], 1);
+    for (let k = 0; k < n - 1; k++) idx.push(e[k], b0 + k, e[k + 1], e[k + 1], b0 + k, b0 + k + 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(new THREE.Uint32BufferAttribute(idx, 1));
+  return g;
+})();
+const trisPerTile = grid.index.count / 3;
+
+// ---- Tile cache and streaming ----------------------------------------------
+const cache = new Map();            // key -> { L, tx, ty, state, data, mesh, sphere, lastUsed }
+const MAX_TILES = 700, MAX_INFLIGHT = 8;
+let inflight = 0, frame = 0;
+const keyOf = (L, tx, ty) => `${L}/${tx}_${ty}`;
+function tileOrigin(L, tx, ty) {
+  const c = levels[L].cell;
+  return { x: -sizeX / 2 + tx * T * c, z: -sizeY / 2 + ty * T * c, c };
+}
+function tileEntry(L, tx, ty) {
+  const key = keyOf(L, tx, ty);
+  let t = cache.get(key);
+  if (t) return t;
+  const lv = levels[L];
+  const mm = index.minmax[L][ty * lv.nx + tx];
+  t = { key, L, tx, ty, state: mm ? 'idle' : 'empty', mm, data: null, mesh: null, sphere: new THREE.Sphere(), lastUsed: 0 };
+  cache.set(key, t);
+  updateSphere(t);
+  return t;
+}
+function updateSphere(t) {
+  if (!t.mm) return;
+  const o = tileOrigin(t.L, t.tx, t.ty), e = U.exag.value;
+  const half = T * o.c / 2, skirt = 4 * o.c + 10;
+  const y = ((t.mm[0] + t.mm[1]) / 2 - zmid) * e, hy = (t.mm[1] - t.mm[0]) / 2 * e + skirt;
+  t.sphere.set(new THREE.Vector3(o.x + half, y, o.z + half), Math.hypot(half, hy, half));
+}
+const DEBUG = new URLSearchParams(location.search).has('debug');
+async function load(t) {
+  t.state = 'loading'; t.started = performance.now(); inflight++;
+  try {
+    const r = await fetch(`data/tiles/${t.L}/${t.tx}_${t.ty}.bin.gz?v=${index.zmin}`);
+    if (!r.ok) throw new Error(r.status);
+    const buf = await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+    if (buf.byteLength !== TA * TA * 2) throw new Error(`tile is ${buf.byteLength} bytes, expected ${TA * TA * 2}`);
+    t.data = new Uint16Array(buf);
+    const tex = new THREE.DataTexture(new Uint8Array(buf), TA, TA, THREE.RGFormat, THREE.UnsignedByteType);
+    tex.minFilter = tex.magFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false; tex.unpackAlignment = 1; tex.needsUpdate = true;
+    const o = tileOrigin(t.L, t.tx, t.ty);
+    const mat = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vert, fragmentShader: frag, side: THREE.DoubleSide,
+      wireframe: $('wire').checked,
+      uniforms: { ...U, hmap: { value: tex }, origin: { value: new THREE.Vector2(o.x, o.z) }, cell: { value: o.c }, skirt: { value: 4 * o.c + 10 },
+                  map: { value: null }, useMap: { value: false }, tiled: { value: false }, uvXform: { value: new THREE.Vector3(0, 0, 1) } } });
+    t.mesh = new THREE.Mesh(grid, mat);
+    t.mesh.frustumCulled = false; t.mesh.visible = false;
+    scene.add(t.mesh);
+    t.state = 'ready';
+  } catch (err) {
+    console.warn('tile failed', t.key, err); t.state = 'idle';
+  } finally { inflight--; }
+}
+function evict(t) {
+  if (t.mesh) { scene.remove(t.mesh); t.mesh.material.uniforms.hmap.value.dispose(); t.mesh.material.dispose(); }
+  cache.delete(t.key);
+}
+
+// ---- Imagery tiles (same layout as terrain tiles, 1024 px each) -------------
+const imgCache = new Map();          // key -> { state: idle|loading|ready|missing, tex, lastUsed }
+const MAX_IMG = 300, MAX_IMG_INFLIGHT = 6;
+let imgInflight = 0, imgWanted = [], texMode = 'naip';
+const imgLoader = new THREE.TextureLoader();
+function imgEntry(key) {
+  let e = imgCache.get(key);
+  if (!e) { e = { key, state: 'idle', tex: null, lastUsed: 0 }; imgCache.set(key, e); }
+  return e;
+}
+function loadImg(e) {
+  e.state = 'loading'; imgInflight++;
+  const [L, rest] = e.key.split('/'), [tx, ty] = rest.split('_');
+  imgLoader.load(`data/imagery/${L}/${tx}_${ty}.jpg`, tex => {
+    tex.colorSpace = THREE.NoColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    e.tex = tex; e.state = 'ready'; imgInflight--;
+  }, undefined, () => { e.state = 'missing'; imgInflight--; });
+}
+// Pick the imagery for a terrain tile: its own tile, else the nearest loaded ancestor.
+function assignTexture(t, d) {
+  const u = t.mesh.material.uniforms;
+  if (texMode === 'none') { u.useMap.value = false; return; }
+  if (texMode !== 'naip') { u.useMap.value = !!texCache[texMode]; u.map.value = texCache[texMode] || null; u.tiled.value = false; return; }
+  let tx = t.tx, ty = t.ty;
+  for (let L = t.L, k = 0; L <= TOP; L++, k++, tx >>= 1, ty >>= 1) {
+    const e = imgEntry(keyOf(L, tx, ty));
+    if (e.state === 'idle') imgWanted.push({ e, d: d + k * 1e6 });   // own level first, then ancestors
+    if (e.state === 'ready') {
+      e.lastUsed = frame;
+      const sc = 1 / (1 << k);
+      u.uvXform.value.set((t.tx - (tx << k)) * sc, (t.ty - (ty << k)) * sc, sc);
+      u.map.value = e.tex; u.useMap.value = true; u.tiled.value = true;
+      return;
+    }
+  }
+  u.useMap.value = !!texCache.naip; u.map.value = texCache.naip || null; u.tiled.value = false;
+}
+function serviceImagery() {
+  imgWanted.sort((a, b) => a.d - b.d);
+  for (const w of imgWanted) { if (imgInflight >= MAX_IMG_INFLIGHT) break; if (w.e.state === 'idle') loadImg(w.e); }
+  imgWanted = [];
+  if (imgCache.size > MAX_IMG) {
+    const old = [...imgCache.values()].filter(e => e.state === 'ready' && e.lastUsed < frame - 30).sort((a, b) => a.lastUsed - b.lastUsed);
+    for (const e of old.slice(0, imgCache.size - MAX_IMG)) { e.tex.dispose(); imgCache.delete(e.key); }
+  }
+}
+
+const frustum = new THREE.Frustum(), pv = new THREE.Matrix4();
+let drawn = [], wanted = [], lastStats = 0;
+function childrenOf(t) {
+  const out = [];
+  if (t.L === 0) return out;
+  const lv = levels[t.L - 1];
+  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+    const tx = 2 * t.tx + dx, ty = 2 * t.ty + dy;
+    if (tx < lv.nx && ty < lv.ny) out.push(tileEntry(t.L - 1, tx, ty));
+  }
+  return out;
+}
+function visit(t, targetPx, focal) {
+  if (t.state === 'empty') return;
+  if (!frustum.intersectsSphere(t.sphere)) return;
+  t.lastUsed = frame;
+  const d = Math.max(1, camera.position.distanceTo(t.sphere.center) - t.sphere.radius);
+  const pxPerCell = levels[t.L].cell * focal / d;
+  if (t.L > 0 && pxPerCell > targetPx) {
+    const kids = childrenOf(t);
+    if (kids.every(k => k.state === 'ready' || k.state === 'empty')) { for (const k of kids) visit(k, targetPx, focal); return; }
+    for (const k of kids) if (k.state === 'idle') wanted.push({ t: k, d });
+  }
+  if (t.state === 'ready') { drawn.push(t); assignTexture(t, d); }
+  else if (t.state === 'idle') wanted.push({ t, d: d * 0.5 });   // a missing tile we need now beats its children
+}
+function updateLOD() {
+  frame++;
+  pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  frustum.setFromProjectionMatrix(pv);
+  const targetPx = parseFloat($('detail').value);
+  const focal = innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+  for (const t of drawn) t.mesh.visible = false;
+  drawn = []; wanted = [];
+  const top = levels[TOP];
+  for (let ty = 0; ty < top.ny; ty++) for (let tx = 0; tx < top.nx; tx++) visit(tileEntry(TOP, tx, ty), targetPx, focal);
+  for (const t of drawn) t.mesh.visible = true;
+  serviceImagery();
+  if (DEBUG && frame % 20 === 0) {
+    const keys = new Set(drawn.map(t => t.key));
+    const overlaps = [];
+    for (const t of drawn) for (let L = t.L + 1, tx = t.tx >> 1, ty = t.ty >> 1; L <= TOP; L++, tx >>= 1, ty >>= 1)
+      if (keys.has(keyOf(L, tx, ty))) overlaps.push(`${t.key} under ${keyOf(L, tx, ty)}`);
+    const states = {};
+    for (const t of cache.values()) states[t.state] = (states[t.state] || 0) + 1;
+    const stale = [...cache.values()].filter(t => t.state === 'loading' && performance.now() - t.started > 15000).map(t => t.key);
+    console.log(`DEBUG frame ${frame}: drawn ${drawn.length}, overlaps ${overlaps.length} ${overlaps.slice(0, 5).join('; ')}, states ${JSON.stringify(states)}, stalled loads ${stale.length} ${stale.slice(0, 5).join(' ')}`);
+    const meshes = scene.children.filter(o => o.isMesh && o.visible).length;
+    if (meshes !== drawn.length) console.log(`DEBUG visible meshes ${meshes} != drawn ${drawn.length}`);
+  }
+  wanted.sort((a, b) => a.d - b.d);
+  for (const w of wanted) { if (inflight >= MAX_INFLIGHT) break; if (w.t.state === 'idle') load(w.t); }
+  if (cache.size > MAX_TILES) {
+    const old = [...cache.values()].filter(t => t.state === 'ready' && t.L !== TOP && t.lastUsed < frame - 30)
+      .sort((a, b) => a.lastUsed - b.lastUsed);
+    for (const t of old.slice(0, cache.size - MAX_TILES)) evict(t);
+  }
+  const now = performance.now();
+  if (now - lastStats > 500) {
+    lastStats = now;
+    const byLevel = {};
+    for (const t of drawn) byLevel[levels[t.L].cell] = (byLevel[levels[t.L].cell] || 0) + 1;
+    const lv = Object.entries(byLevel).sort((a, b) => a[0] - b[0]).map(([c, n]) => `${n}@${c}m`).join(' ');
+    const imgReady = [...imgCache.values()].filter(e => e.state === 'ready').length;
+    $('stats').textContent = `${drawn.length} tiles drawn (${lv}), ${(drawn.length * trisPerTile / 1e6).toFixed(1)} M triangles, ` +
+      `${cache.size} cached, ${inflight} loading. Imagery tiles: ${imgReady} ready, ${imgInflight} loading.`;
+  }
+}
+
+// Elevation lookup: finest loaded tile under the point, falling back to the coarse grid.
+function sampleTile(t, x, zz) {
+  const o = tileOrigin(t.L, t.tx, t.ty);
+  const col = (x - o.x) / o.c + index.apron, row = (zz - o.z) / o.c + index.apron;
+  const c0 = Math.floor(col), r0 = Math.floor(row);
+  if (c0 < 0 || r0 < 0 || c0 >= TA - 1 || r0 >= TA - 1) return NaN;
+  const fx = col - c0, fy = row - r0, d = t.data, i = r0 * TA + c0;
+  const h = v => v === 0 ? NaN : index.zmin + (v - 1) / 65534 * index.zrange;
+  return (h(d[i]) * (1 - fx) + h(d[i + 1]) * fx) * (1 - fy) + (h(d[i + TA]) * (1 - fx) + h(d[i + TA + 1]) * fx) * fy;
+}
+function sampleZ(x, zz) {
+  for (let L = 0; L < TOP; L++) {
+    const c = levels[L].cell, tx = Math.floor((x + sizeX / 2) / (T * c)), ty = Math.floor((zz + sizeY / 2) / (T * c));
+    const t = cache.get(keyOf(L, tx, ty));
+    if (t && t.state === 'ready') { const e = sampleTile(t, x, zz); if (!Number.isNaN(e)) return e; }
+  }
+  const col = (x + sizeX / 2) / cs, row = (zz + sizeY / 2) / cs;
+  if (!(col >= 0 && row >= 0 && col < W - 1 && row < H - 1)) return NaN;
+  const c0 = Math.floor(col), r0 = Math.floor(row), fx = col - c0, fy = row - r0, i = r0 * W + c0;
+  return (z[i] * (1 - fx) + z[i + 1] * fx) * (1 - fy) + (z[i + W] * (1 - fx) + z[i + W + 1] * fx) * fy;
+}
+
+// ---- Textures (loaded on demand; only one is resident at a time) ------------
+const loader = new THREE.TextureLoader();
+const texFiles = { naip: meta.naip, color: meta.texture, shade: meta.hillshade };
+const texCache = {};
+if (!meta.naip) { $('tex').querySelector('[value=naip]').remove(); $('tex').value = 'color'; }
+function applyTexture() {
+  const v = $('tex').value;
+  texMode = v;
+  U.lit.value = v !== 'naip';
+  for (const id of ['az', 'alt']) $(id).disabled = v === 'naip';
+  if (v === 'none' || texCache[v]) return;
+  $('readout').textContent = 'Loading texture…';
+  loader.load('data/' + texFiles[v], t => {   // global fallback texture for this mode
+    t.colorSpace = THREE.NoColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    for (const k in texCache) if (k !== v) { texCache[k].dispose(); delete texCache[k]; }
+    texCache[v] = t;
+    $('readout').textContent = ground.active ? 'Standing at: ' + describe(groundHere()) : 'Hover over the terrain for coordinates.';
+  });
+}
+applyTexture();
+
+// ---- Controls --------------------------------------------------------------
+function resetView() {
+  camera.position.set(-sizeX * 0.35, Math.max(sizeX, sizeY) * 0.45, sizeY * 0.85);
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+function topView() {
+  camera.position.set(0, Math.max(sizeX, sizeY) * 1.2, 1);
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+resetView();
+addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') resetView();
+  if (e.key === 't' || e.key === 'T') topView();
+});
+function updateSun() {
+  const az = THREE.MathUtils.degToRad(parseFloat($('az').value));
+  const alt = THREE.MathUtils.degToRad(parseFloat($('alt').value));
+  U.sunDir.value.set(Math.sin(az) * Math.cos(alt), Math.sin(alt), -Math.cos(az) * Math.cos(alt));   // north is -z
+  $('azv').textContent = `${$('az').value}°`; $('altv').textContent = `${$('alt').value}°`;
+}
+updateSun();
+$('az').oninput = $('alt').oninput = updateSun;
+$('exag').oninput = () => {
+  const e = parseFloat($('exag').value);
+  $('exagv').textContent = `${e.toFixed(1)}×`; U.exag.value = e; for (const t of cache.values()) updateSphere(t);
+  if (ground.active) placeCamera();
+};
+$('wire').onchange = () => { for (const t of cache.values()) if (t.mesh) t.mesh.material.wireframe = $('wire').checked; };
+$('tex').onchange = applyTexture;
+
+// ---- Picking against the CPU heightfield -----------------------------------
+const ray = new THREE.Raycaster(); const ndc = new THREE.Vector2();
+function pickTerrain(clientX, clientY) {
+  ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const e = U.exag.value;
+  const o = ray.ray.origin, d = ray.ray.direction;
+  const floor = (meta.zmin - zmid) * e - 10;
+  const step = ground.active ? 2 : cs;
+  for (let t = 0; t < 400000; t += step) {
+    const px = o.x + d.x * t, py = o.y + d.y * t, pz = o.z + d.z * t;
+    if (py < floor) break;
+    const ez = sampleZ(px, pz);
+    if (Number.isNaN(ez)) continue;
+    if (py <= (ez - zmid) * e) return { x: px, z: pz, ez };
+  }
+  return null;
+}
+const toUTM = p => ({ E: meta.bounds.left + (p.x + sizeX / 2), N: meta.bounds.top - (p.z + sizeY / 2) });
+function describe(hit) {
+  const u = toUTM(hit);
+  return `Elev ${hit.ez.toFixed(1)} m (${(hit.ez * 3.28084).toFixed(0)} ft)   ·   ${meta.crs}  E ${u.E.toFixed(0)}  N ${u.N.toFixed(0)}`;
+}
+canvas.addEventListener('pointermove', ev => {
+  if (ground.active && ground.dragging) return;
+  const hit = pickTerrain(ev.clientX, ev.clientY);
+  $('readout').textContent = hit ? (ground.active ? 'Looking at: ' : '') + describe(hit)
+                                 : (ground.active ? describe(groundHere()) : 'Hover over the terrain for coordinates.');
+});
+
+// ---- Ground view -----------------------------------------------------------
+const EYE = 2.0, WALK = 40, RUN = 200;   // metres, m/s
+const ground = { active: false, x: 0, z: 0, yaw: 0, pitch: 0, dragging: false, keys: new Set(), fov: 60 };
+const saved = { pos: new THREE.Vector3(), target: new THREE.Vector3(), near: camera.near, fov: camera.fov };
+let down = null;
+function groundHere() {
+  const ez = sampleZ(ground.x, ground.z);
+  return { x: ground.x, z: ground.z, ez: Number.isNaN(ez) ? meta.zmin : ez };
+}
+function placeCamera() {
+  const e = U.exag.value, h = groundHere();
+  camera.position.set(h.x, (h.ez - zmid) * e + EYE * e, h.z);
+  const dir = new THREE.Vector3(Math.sin(ground.yaw) * Math.cos(ground.pitch), Math.sin(ground.pitch), -Math.cos(ground.yaw) * Math.cos(ground.pitch));
+  camera.lookAt(camera.position.clone().add(dir));
+}
+function enterGround(x, zz, yaw = ground.yaw) {
+  if (!ground.active) {
+    saved.pos.copy(camera.position); saved.target.copy(controls.target);
+    controls.enabled = false;
+    camera.near = 1; camera.fov = ground.fov; camera.updateProjectionMatrix();
+    scene.background = SKY; U.fogOn.value = true;
+    $('exitGround').style.display = '';
+  }
+  ground.active = true; ground.x = x; ground.z = zz; ground.yaw = yaw; ground.pitch = 0;
+  placeCamera();
+  const u = toUTM({ x, z: zz });
+  history.replaceState(null, '', `?ground=${u.E.toFixed(0)},${u.N.toFixed(0)}&yaw=${THREE.MathUtils.radToDeg(yaw).toFixed(0)}`);
+  $('readout').textContent = 'Standing at: ' + describe(groundHere());
+}
+function exitGround() {
+  if (!ground.active) return;
+  ground.active = false;
+  camera.near = saved.near; camera.fov = saved.fov; camera.updateProjectionMatrix();
+  scene.background = DARK; U.fogOn.value = false;
+  camera.position.copy(saved.pos); controls.target.copy(saved.target);
+  controls.enabled = true; controls.update();
+  $('exitGround').style.display = 'none';
+  history.replaceState(null, '', location.pathname);
+}
+$('exitGround').onclick = exitGround;
+canvas.addEventListener('pointerdown', ev => {
+  down = { x: ev.clientX, y: ev.clientY, button: ev.button, yaw: ground.yaw, pitch: ground.pitch };
+  if (ground.active && ev.button === 0) ground.dragging = true;
+});
+canvas.addEventListener('pointermove', ev => {
+  if (!ground.active || !ground.dragging || !down) return;
+  const k = THREE.MathUtils.degToRad(camera.fov) / innerHeight;
+  ground.yaw = down.yaw + (ev.clientX - down.x) * k;
+  ground.pitch = THREE.MathUtils.clamp(down.pitch + (ev.clientY - down.y) * k, -1.4, 1.4);
+  placeCamera();
+});
+canvas.addEventListener('pointerup', ev => {
+  ground.dragging = false;
+  if (!down || down.button !== 0) return;
+  const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y);
+  down = null;
+  if (moved > 4) return;
+  const hit = pickTerrain(ev.clientX, ev.clientY);
+  if (!hit) return;
+  const yaw = ground.active ? ground.yaw : Math.atan2(hit.x - camera.position.x, -(hit.z - camera.position.z));
+  enterGround(hit.x, hit.z, yaw);
+});
+canvas.addEventListener('wheel', ev => {
+  if (!ground.active) return;
+  ev.preventDefault();
+  ground.fov = THREE.MathUtils.clamp(ground.fov * Math.exp(ev.deltaY * 0.001), 5, 100);
+  camera.fov = ground.fov; camera.updateProjectionMatrix();
+}, { passive: false });
+addEventListener('keydown', e => { if (e.key === 'Escape') exitGround(); ground.keys.add(e.key.toLowerCase()); });
+addEventListener('keyup', e => ground.keys.delete(e.key.toLowerCase()));
+let last = performance.now();
+function walk() {
+  const now = performance.now(), dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (!ground.active) return;
+  placeCamera();
+  const k = ground.keys; let fwd = 0, side = 0;
+  if (k.has('w') || k.has('arrowup')) fwd += 1;
+  if (k.has('s') || k.has('arrowdown')) fwd -= 1;
+  if (k.has('d') || k.has('arrowright')) side += 1;
+  if (k.has('a') || k.has('arrowleft')) side -= 1;
+  if (!fwd && !side) return;
+  const sp = (k.has('shift') ? RUN : WALK) * dt;
+  const fx = Math.sin(ground.yaw), fz = -Math.cos(ground.yaw);
+  const nx = ground.x + (fx * fwd - fz * side) * sp, nz = ground.z + (fz * fwd + fx * side) * sp;
+  if (Number.isNaN(sampleZ(nx, nz))) return;
+  ground.x = nx; ground.z = nz;
+  placeCamera();
+  $('readout').textContent = 'Standing at: ' + describe(groundHere());
+}
+{ const d = new URLSearchParams(location.search).get('detail'); if (d) $('detail').value = d; }
+{ // Map-view camera: ?view=<camE>,<camN>,<camElev>,<targetE>,<targetN>  (UTM metres)
+  const v = new URLSearchParams(location.search).get('view');
+  if (v) {
+    const [cE, cN, cZ, tE, tN] = v.split(',').map(Number);
+    const tx = tE - meta.bounds.left - sizeX / 2, tz = meta.bounds.top - tN - sizeY / 2;
+    camera.position.set(cE - meta.bounds.left - sizeX / 2, cZ - zmid, meta.bounds.top - cN - sizeY / 2);
+    const te = sampleZ(tx, tz);
+    controls.target.set(tx, (Number.isNaN(te) ? meta.zmin : te) - zmid, tz); controls.update();
+  }
+}
+{ // Shareable start point: ?ground=<easting>,<northing>&yaw=<deg clockwise from north>
+  const qs = new URLSearchParams(location.search), g = qs.get('ground');
+  if (g) {
+    const [E, N] = g.split(',').map(Number);
+    const x = E - meta.bounds.left - sizeX / 2, zz = meta.bounds.top - N - sizeY / 2;
+    if (!Number.isNaN(sampleZ(x, zz))) enterGround(x, zz, THREE.MathUtils.degToRad(parseFloat(qs.get('yaw') || '0')));
+  }
+}
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+$('status').remove();
+renderer.setAnimationLoop(() => {
+  walk();
+  if (!ground.active) controls.update();
+  camera.updateMatrixWorld();
+  updateLOD();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>

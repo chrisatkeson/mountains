@@ -1,0 +1,7 @@
+.venv/
+data/raw/
+viewer/data/*.bin
+viewer/data/*.png
+viewer/data/*.jpg
+viewer/data/tiles/
+viewer/data/imagery/

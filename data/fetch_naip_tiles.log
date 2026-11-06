@@ -1,0 +1,18 @@
+level 0: 1840 requests of 3x3 tiles @ 0.50 m/px
+  25/1840 requests, 1.7 min, ETA 125 min
+  50/1840 requests, 3.4 min, ETA 122 min
+  75/1840 requests, 4.8 min, ETA 112 min
+  100/1840 requests, 6.7 min, ETA 116 min
+  125/1840 requests, 8.0 min, ETA 110 min
+  150/1840 requests, 9.2 min, ETA 104 min
+  retry 1 for [453002, 4192390, 454538, 4193926]: HTTP Error 502: Bad Gateway
+  retry 2 for [453002, 4192390, 454538, 4193926]: HTTP Error 502: Bad Gateway
+  retry 3 for [453002, 4192390, 454538, 4193926]: HTTP Error 502: Bad Gateway
+  175/1840 requests, 11.6 min, ETA 110 min
+  200/1840 requests, 12.7 min, ETA 104 min
+  225/1840 requests, 14.4 min, ETA 103 min
+  250/1840 requests, 15.9 min, ETA 101 min
+  retry 1 for [457610, 4192390, 459146, 4193926]: HTTP Error 502: Bad Gateway
+  275/1840 requests, 17.5 min, ETA 100 min
+  retry 2 for [457610, 4192390, 459146, 4193926]: HTTP Error 502: Bad Gateway
+  300/1840 requests, 19.1 min, ETA 98 min
