@@ -5,3 +5,6 @@ viewer/data/*.png
 viewer/data/*.jpg
 viewer/data/tiles/
 viewer/data/imagery/
+data/lpc/
+data/*.log
+data/lpc_crestone.txt

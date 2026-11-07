@@ -71,6 +71,15 @@ Safe to stop and resume. Each drawn terrain tile samples its own imagery tile,
 or the nearest loaded ancestor, and falls back to the global image until the
 tiles exist.
 
+## Cliff detail
+
+Orthoimagery carries no information on near-vertical faces, so draping it over
+cliffs produces vertical streaks. With "Cliff shading" set to On (default Off), the fragment shader
+blends faces steeper than about 40° to a triplanar-mapped procedural rock
+texture (`viewer/data/rock.png`, from `scripts/make_rock_texture.py`) tinted
+by the blurred local aerial colour, and lights those faces from the full
+resolution lidar normal using the sun sliders. Flat ground keeps the photo.
+
 ## View
 
 ```sh
@@ -88,6 +97,10 @@ neighbouring texels, so lighting is always at the tile's full resolution. On
 `R` to reset, `T` for a top-down view. The panel controls vertical
 exaggeration, mesh density, texture mode, sun position and wireframe. Hovering
 shows elevation and UTM coordinates sampled from the full heightmap.
+
+The URL always mirrors the current camera (map or ground view) and every panel
+setting, so a reload, bookmark, or the "Copy view link" button reproduces the
+exact view. Useful for before/after comparisons across a hard refresh.
 
 Click any point to stand on it at eye level. On the ground, drag to look
 around, use WASD or arrow keys to walk (Shift to run), scroll to zoom the field

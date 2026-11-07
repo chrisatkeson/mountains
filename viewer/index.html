@@ -44,12 +44,17 @@
       <option value="none">Lit surface</option>
     </select>
   </label>
-  <label title="Lighting applies to the hillshade and lit-surface textures; aerial imagery is shown unlit"><span>Sun azimuth</span><input id="az" type="range" min="0" max="360" step="1" value="315"><span class="val" id="azv">315°</span></label>
+  <label title="Lights the hillshade and lit-surface textures, and the steep faces in imagery mode"><span>Sun azimuth</span><input id="az" type="range" min="0" max="360" step="1" value="315"><span class="val" id="azv">315°</span></label>
   <label><span>Sun altitude</span><input id="alt" type="range" min="5" max="85" step="1" value="40"><span class="val" id="altv">40°</span></label>
+  <label title="Blend steep faces to a slope-lit rock detail texture instead of stretched aerial pixels"><span>Cliff shading</span>
+    <select id="cliffs"><option value="0" selected>Off</option><option value="1">On</option></select>
+  </label>
   <label><span>Wireframe</span><input id="wire" type="checkbox"></label>
   <div class="muted">Drag to orbit · right-drag to pan · wheel to zoom · <kbd>R</kbd> reset · <kbd>T</kbd> top-down</div>
   <div class="muted"><b>Click</b> a point to stand there. On the ground: drag to look, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk, <kbd>Shift</kbd> run, wheel zooms, <kbd>Esc</kbd> returns.</div>
   <button id="exitGround" style="display:none;margin-top:6px">Back to map view (Esc)</button>
+  <div style="margin-top:6px;display:flex;gap:6px;align-items:center"><button id="copyLink">Copy view link</button><span class="muted" id="copied"></span></div>
+  <div class="muted">The URL always holds the current view and settings, so a reload or bookmark restores it exactly.</div>
   <div class="muted" id="stats"></div>
 </div>
 <div id="readout">Hover over the terrain for coordinates.</div>
@@ -134,27 +139,82 @@ const vert = `
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }`;
 const frag = `
-  uniform sampler2D hmap; uniform sampler2D map; uniform bool useMap, tiled, lit, fogOn;
+  uniform sampler2D hmap; uniform sampler2D map; uniform sampler2D rock; uniform bool useMap, tiled, lit, fogOn, cliffs;
   uniform float tzmin, tzrange, cell, exag, sunI, ambI;
   uniform vec3 baseColor, sunDir, fogColor; uniform vec2 fogRange;
   in vec2 vUv; in vec2 vUvTile; in vec2 vCell; in float vValid; in vec3 vWorld;
   out vec4 fragColor;
   ${decode}
+  // Repetition-free lookup (I. Quilez): blend two copies of the texture at offsets
+  // chosen by low-frequency noise, so no period is visible across a big face.
+  float rockNoTile(vec2 uv, float k) {   // k: low-frequency noise shared by the fragment
+    vec2 dx = dFdx(uv), dy = dFdy(uv);
+    float l = k * 8.0, f = fract(l), ia = floor(l), ib = ia + 1.0;
+    vec2 oa = sin(vec2(3.0, 7.0) * ia), ob = sin(vec2(3.0, 7.0) * ib);
+    float ca = textureGrad(rock, uv + oa, dx, dy).r, cb = textureGrad(rock, uv + ob, dx, dy).r;
+    return mix(ca, cb, smoothstep(0.2, 0.8, f - 0.1 * (ca - cb)));
+  }
+  // Only the large octave repeats visibly, so only it pays for the anti-repetition
+  // lookups; the fine octaves use plain sampling. Planes with tiny weight are skipped.
+  float triRockBig(vec3 p, vec3 bw, float k) {   // dominant projection plane only: 2 reads
+    if (bw.x >= bw.y && bw.x >= bw.z) return rockNoTile(p.yz, k);
+    if (bw.y >= bw.z) return rockNoTile(p.xz, k);
+    return rockNoTile(p.xy, k);
+  }
+  float triRock(vec3 p, vec3 bw) {
+    return texture(rock, p.yz).r * bw.x + texture(rock, p.xz).r * bw.y + texture(rock, p.xy).r * bw.z;
+  }
   void main() {
     if (vValid < 0.999) discard;
-    ivec2 c = ivec2(vCell + 0.5) + ${index.apron};
-    float dx = (cellHeight(c + ivec2(1, 0)) - cellHeight(c - ivec2(1, 0))) * exag / (2.0 * cell);
-    float dz = (cellHeight(c + ivec2(0, 1)) - cellHeight(c - ivec2(0, 1))) * exag / (2.0 * cell);
+    // Bilinearly interpolated height so the normal varies smoothly within a cell
+    // instead of stepping at every cell edge (which showed as pixelated lighting).
+    vec2 cf = vCell + float(${index.apron});
+    vec2 f = fract(cf); ivec2 c0 = ivec2(floor(cf));
+    #define HB(off) mix(mix(cellHeight(c0 + off), cellHeight(c0 + off + ivec2(1, 0)), f.x), mix(cellHeight(c0 + off + ivec2(0, 1)), cellHeight(c0 + off + ivec2(1, 1)), f.x), f.y)
+    float dx = (HB(ivec2(1, 0)) - HB(ivec2(-1, 0))) * exag / (2.0 * cell);
+    float dz = (HB(ivec2(0, 1)) - HB(ivec2(0, -1))) * exag / (2.0 * cell);
     vec3 n = normalize(vec3(-dx, 1.0, -dz));
-    vec3 col = useMap ? texture(map, tiled ? vUvTile : vUv).rgb : baseColor;
-    if (lit) col *= ambI + sunI * max(dot(n, sunDir), 0.0);
+    vec2 uv = tiled ? vUvTile : vUv;
+    vec3 col = useMap ? texture(map, uv).rgb : baseColor;
+    float light = ambI + sunI * max(dot(n, sunDir), 0.0);
+    if (lit) col *= light;
+    if (cliffs) {
+      // Orthoimagery has no information on near-vertical faces: blend to a triplanar
+      // rock detail tinted by the blurred local aerial colour, and re-light by slope.
+      // A 1 m grid turns a vertical face into 1 m risers and treads, so the blend,
+      // projection and lighting use a normal averaged over +-3 cells; otherwise every
+      // step flips between planes and draws a stripe.
+      float sx = (cellHeight(c0 + ivec2(3, 0)) - cellHeight(c0 + ivec2(-3, 0))) * exag / (6.0 * cell);   // 4 reads, no bilinear:
+      float sz = (cellHeight(c0 + ivec2(0, 3)) - cellHeight(c0 + ivec2(0, -3))) * exag / (6.0 * cell);   // this normal only steers the blend
+      vec3 ns = normalize(vec3(-sx, 1.0, -sz));
+      float w = 1.0 - smoothstep(0.57, 0.80, ns.y);          // 0 below ~37 deg, 1 above ~55 deg
+      if (w > 0.0) {
+        float light = ambI + sunI * max(dot(ns, sunDir), 0.0);
+        vec3 bw = abs(ns); bw /= bw.x + bw.y + bw.z;
+        float k = texture(rock, vWorld.xz * 0.0004 + vWorld.y * 0.0003).r;
+        float detail = (triRockBig(vWorld / 29.0, bw, k) * 0.45 + triRock(vWorld / 6.1, bw) * 0.35 + triRock(vWorld / 1.7, bw) * 0.2) / 0.5;
+        // Hue from the blurred aerial colour with its baked-in shadow removed, so the face
+        // is shaded once, by our sun. Where the photo is too dark to carry a reliable hue
+        // (deep shadow has a blue cast that normalisation would blow up), fall back to a
+        // neutral rock grey.
+        vec3 tint = useMap ? textureLod(map, uv, 5.0).rgb : baseColor;
+        float lum = dot(tint, vec3(0.3, 0.59, 0.11));
+        vec3 hue = tint / max(lum, 0.02) * 0.42;
+        hue = mix(vec3(0.42), hue, 0.6);                               // keep chroma modest even in daylight
+        tint = clamp(mix(vec3(0.42), hue, smoothstep(0.06, 0.22, lum)), 0.0, 1.0);
+        vec3 rockCol = tint * detail * (light + 0.15);
+        col = mix(col, rockCol, w);
+      }
+    }
     if (fogOn) col = mix(col, fogColor, smoothstep(fogRange.x, fogRange.y, distance(vWorld, cameraPosition)));
     fragColor = vec4(col, 1.0);
   }`;
+const loader = new THREE.TextureLoader();
+const rockTex = loader.load('data/rock.png', t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.NoColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); });
 const U = {   // uniforms shared by every tile material (same objects, so one update reaches all)
   tzmin: { value: index.zmin }, tzrange: { value: index.zrange }, zmid: { value: zmid },
   exag: { value: 1 }, extent: { value: new THREE.Vector2(sizeX, sizeY) },
-  lit: { value: true },
+  lit: { value: true }, cliffs: { value: false }, rock: { value: rockTex },
   baseColor: { value: new THREE.Color(0xb8a98a) }, sunDir: { value: new THREE.Vector3(0, 1, 0) },
   sunI: { value: 1.1 }, ambI: { value: 0.35 },
   fogOn: { value: false }, fogColor: { value: SKY.clone() }, fogRange: { value: new THREE.Vector2(15000, 90000) },
@@ -378,7 +438,6 @@ function sampleZ(x, zz) {
 }
 
 // ---- Textures (loaded on demand; only one is resident at a time) ------------
-const loader = new THREE.TextureLoader();
 const texFiles = { naip: meta.naip, color: meta.texture, shade: meta.hillshade };
 const texCache = {};
 if (!meta.naip) { $('tex').querySelector('[value=naip]').remove(); $('tex').value = 'color'; }
@@ -386,7 +445,6 @@ function applyTexture() {
   const v = $('tex').value;
   texMode = v;
   U.lit.value = v !== 'naip';
-  for (const id of ['az', 'alt']) $(id).disabled = v === 'naip';
   if (v === 'none' || texCache[v]) return;
   $('readout').textContent = 'Loading texture…';
   loader.load('data/' + texFiles[v], t => {   // global fallback texture for this mode
@@ -427,6 +485,7 @@ $('exag').oninput = () => {
   $('exagv').textContent = `${e.toFixed(1)}×`; U.exag.value = e; for (const t of cache.values()) updateSphere(t);
   if (ground.active) placeCamera();
 };
+$('cliffs').onchange = () => { U.cliffs.value = $('cliffs').value === '1'; };
 $('wire').onchange = () => { for (const t of cache.values()) if (t.mesh) t.mesh.material.wireframe = $('wire').checked; };
 $('tex').onchange = applyTexture;
 
@@ -485,8 +544,7 @@ function enterGround(x, zz, yaw = ground.yaw) {
   }
   ground.active = true; ground.x = x; ground.z = zz; ground.yaw = yaw; ground.pitch = 0;
   placeCamera();
-  const u = toUTM({ x, z: zz });
-  history.replaceState(null, '', `?ground=${u.E.toFixed(0)},${u.N.toFixed(0)}&yaw=${THREE.MathUtils.radToDeg(yaw).toFixed(0)}`);
+  syncUrl();
   $('readout').textContent = 'Standing at: ' + describe(groundHere());
 }
 function exitGround() {
@@ -497,7 +555,7 @@ function exitGround() {
   camera.position.copy(saved.pos); controls.target.copy(saved.target);
   controls.enabled = true; controls.update();
   $('exitGround').style.display = 'none';
-  history.replaceState(null, '', location.pathname);
+  syncUrl();
 }
 $('exitGround').onclick = exitGround;
 canvas.addEventListener('pointerdown', ev => {
@@ -509,7 +567,7 @@ canvas.addEventListener('pointermove', ev => {
   const k = THREE.MathUtils.degToRad(camera.fov) / innerHeight;
   ground.yaw = down.yaw + (ev.clientX - down.x) * k;
   ground.pitch = THREE.MathUtils.clamp(down.pitch + (ev.clientY - down.y) * k, -1.4, 1.4);
-  placeCamera();
+  placeCamera(); syncUrl();
 });
 canvas.addEventListener('pointerup', ev => {
   ground.dragging = false;
@@ -526,7 +584,7 @@ canvas.addEventListener('wheel', ev => {
   if (!ground.active) return;
   ev.preventDefault();
   ground.fov = THREE.MathUtils.clamp(ground.fov * Math.exp(ev.deltaY * 0.001), 5, 100);
-  camera.fov = ground.fov; camera.updateProjectionMatrix();
+  camera.fov = ground.fov; camera.updateProjectionMatrix(); syncUrl();
 }, { passive: false });
 addEventListener('keydown', e => { if (e.key === 'Escape') exitGround(); ground.keys.add(e.key.toLowerCase()); });
 addEventListener('keyup', e => ground.keys.delete(e.key.toLowerCase()));
@@ -546,17 +604,53 @@ function walk() {
   const nx = ground.x + (fx * fwd - fz * side) * sp, nz = ground.z + (fz * fwd + fx * side) * sp;
   if (Number.isNaN(sampleZ(nx, nz))) return;
   ground.x = nx; ground.z = nz;
-  placeCamera();
+  placeCamera(); syncUrl();
   $('readout').textContent = 'Standing at: ' + describe(groundHere());
 }
-{ const d = new URLSearchParams(location.search).get('detail'); if (d) $('detail').value = d; }
+// ---- View persistence: the URL mirrors camera and settings ---------------------
+let urlTimer = 0;
+function syncUrl() {
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(() => {
+    const q = new URLSearchParams();
+    if (ground.active) {
+      const u = toUTM({ x: ground.x, z: ground.z });
+      q.set('ground', `${u.E.toFixed(1)},${u.N.toFixed(1)}`);
+      q.set('yaw', THREE.MathUtils.radToDeg(ground.yaw).toFixed(1));
+      q.set('pitch', THREE.MathUtils.radToDeg(ground.pitch).toFixed(1));
+      q.set('fov', ground.fov.toFixed(1));
+    } else {
+      const c = toUTM({ x: camera.position.x, z: camera.position.z }), t = toUTM({ x: controls.target.x, z: controls.target.z });
+      q.set('view', `${c.E.toFixed(1)},${c.N.toFixed(1)},${(camera.position.y + zmid).toFixed(1)},${t.E.toFixed(1)},${t.N.toFixed(1)},${(controls.target.y + zmid).toFixed(1)}`);
+    }
+    q.set('detail', $('detail').value); q.set('tex', $('tex').value); q.set('exag', $('exag').value);
+    q.set('az', $('az').value); q.set('alt', $('alt').value);
+    q.set('cliffs', $('cliffs').value);
+    if ($('wire').checked) q.set('wire', 1);
+    history.replaceState(null, '', '?' + q.toString());
+  }, 150);
+}
+controls.addEventListener('change', syncUrl);
+for (const id of ['detail', 'tex', 'exag', 'az', 'alt', 'wire', 'cliffs']) if ($(id)) $(id).addEventListener('change', syncUrl);
+$('copyLink').onclick = async () => {
+  try { await navigator.clipboard.writeText(location.href); $('copied').textContent = 'copied'; }
+  catch { $('copied').textContent = location.href; }
+  setTimeout(() => { $('copied').textContent = ''; }, 2500);
+};
+{ // Restore settings from the URL before the camera is placed.
+  const qs = new URLSearchParams(location.search);
+  const setv = (id, key, fn) => { const v = qs.get(key); if (v !== null && $(id)) { fn ? fn(v) : ($(id).value = v); $(id).dispatchEvent(new Event(id === 'exag' || id === 'az' || id === 'alt' ? 'input' : 'change')); } };
+  setv('detail', 'detail'); setv('tex', 'tex'); setv('exag', 'exag'); setv('az', 'az'); setv('alt', 'alt');
+  setv('cliffs', 'cliffs');
+  setv('wire', 'wire', v => { $('wire').checked = v === '1'; });
+}
 { // Map-view camera: ?view=<camE>,<camN>,<camElev>,<targetE>,<targetN>  (UTM metres)
   const v = new URLSearchParams(location.search).get('view');
   if (v) {
-    const [cE, cN, cZ, tE, tN] = v.split(',').map(Number);
+    const [cE, cN, cZ, tE, tN, tZ] = v.split(',').map(Number);
     const tx = tE - meta.bounds.left - sizeX / 2, tz = meta.bounds.top - tN - sizeY / 2;
     camera.position.set(cE - meta.bounds.left - sizeX / 2, cZ - zmid, meta.bounds.top - cN - sizeY / 2);
-    const te = sampleZ(tx, tz);
+    const te = Number.isNaN(tZ) ? sampleZ(tx, tz) : tZ;
     controls.target.set(tx, (Number.isNaN(te) ? meta.zmin : te) - zmid, tz); controls.update();
   }
 }
@@ -565,7 +659,12 @@ function walk() {
   if (g) {
     const [E, N] = g.split(',').map(Number);
     const x = E - meta.bounds.left - sizeX / 2, zz = meta.bounds.top - N - sizeY / 2;
-    if (!Number.isNaN(sampleZ(x, zz))) enterGround(x, zz, THREE.MathUtils.degToRad(parseFloat(qs.get('yaw') || '0')));
+    if (!Number.isNaN(sampleZ(x, zz))) {
+      enterGround(x, zz, THREE.MathUtils.degToRad(parseFloat(qs.get('yaw') || '0')));
+      ground.pitch = THREE.MathUtils.degToRad(parseFloat(qs.get('pitch') || '0'));
+      if (qs.get('fov')) { ground.fov = parseFloat(qs.get('fov')); camera.fov = ground.fov; camera.updateProjectionMatrix(); }
+      placeCamera();
+    }
   }
 }
 
