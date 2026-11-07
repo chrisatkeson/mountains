@@ -46,6 +46,7 @@ def main():
     ap.add_argument("--quality", type=int, default=85)
     ap.add_argument("--near", default="447500,4202500", help="E,N fetched first")
     ap.add_argument("--levels-only", action="store_true", help="skip fetching; just rebuild coarser levels")
+    ap.add_argument("--rebuild-levels", action="store_true", help="discard existing coarse levels first (after adding area)")
     a = ap.parse_args()
     idx = json.load(open(a.index))
     b, sr, T = idx["bounds"], idx["crs"].split(":")[1], idx["tileSize"]
@@ -90,6 +91,11 @@ def main():
                     el = time.time() - t0
                     print(f"  {done}/{len(blocks)} requests, {el / 60:.1f} min, ETA {el / done * (len(blocks) - done) / 60:.0f} min", flush=True)
 
+    if a.rebuild_levels:
+        import shutil
+        for L in range(1, 20):
+            d = os.path.join(a.out, str(L))
+            if os.path.isdir(d): shutil.rmtree(d)
     for L in range(1, len(levels)):
         lv, below = levels[L], levels[L - 1]
         os.makedirs(os.path.join(a.out, str(L)), exist_ok=True)

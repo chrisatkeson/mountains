@@ -152,7 +152,7 @@ def main():
 
     index_path = os.path.join(OUT, "index.json")
     index = json.load(open(index_path)) if os.path.exists(index_path) else {}
-    index.update({"tileSize": T, "apron": 1, "zmin": Q["zmin"], "zrange": Q["zrange"],
+    index.update({"tileSize": T, "apron": 1, "zmin": Q["zmin"], "zrange": Q["zrange"], "built": int(time.time()),
                   "bounds": b, "crs": meta["crs"], "levels": levels})
     index.setdefault("minmax", {})
 

@@ -3,7 +3,7 @@
 # Downloads go to a .part file and are renamed on success, so an existing .tif is always complete.
 # Transfers that drop below 10 KB/s for 30 s are aborted and retried (e.g. after a network change).
 cd "$(dirname "$0")/.." && mkdir -p data/raw
-grep -v '^#' data/tiles.txt | xargs -n 1 -P 8 sh -c '
+grep -v '^#' "${1:-data/tiles.txt}" | xargs -n 1 -P 8 sh -c '
   f=data/raw/$(basename "$0")
   [ -s "$f" ] && exit 0
   for attempt in 1 2 3 4 5; do

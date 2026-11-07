@@ -23,6 +23,23 @@ Expect roughly 10 GB. Several cells are covered by more than one lidar
 project; the mosaic prefers them in the order listed in `PROJECT_PRIORITY` at
 the top of `scripts/process_dem.py` and uses the others to fill gaps.
 
+## Adding area
+
+`data/tiles_south.txt` lists the 1 m tiles for the 70 × 60 km block directly
+south of the original one (Blanca Peak and the Culebra Range), found with the
+USGS TNM Access API. To extend coverage: download the new list, then rebuild
+everything downstream, since the mosaic extent and pyramid grid change:
+
+```sh
+./scripts/download.sh data/tiles_south.txt
+.venv/bin/python scripts/process_dem.py          # mosaic over all tiles in data/raw
+.venv/bin/python scripts/build_tiles.py          # full terrain pyramid rebuild
+.venv/bin/python scripts/fetch_naip_tiles.py --rebuild-levels   # new imagery tiles + coarse levels
+```
+
+Existing level-0 imagery tiles stay valid because the pyramid origin (the
+north-west corner) does not move when area is added to the south or east.
+
 ## Build the viewer assets
 
 ```sh
@@ -57,6 +74,14 @@ Map ImageServer in 2000 px tiles and stitches them into `viewer/data/naip.jpg`.
 The viewer uses it as the default texture when present, rendered unlit because
 the photography already contains the sun; a fixed northwest sun lights the other
 texture modes.
+
+## Pins
+
+Type a coordinate into the Pins box (degrees-minutes-seconds, decimal degrees,
+or UTM 13N easting/northing) and press Add, or press Place and click the
+terrain. Each pin lists its elevation with Go (fly there), Link (copy a URL
+that opens the viewer centred on the pin, pins included) and remove. Pins are
+carried in the URL as `pins=E,N,name;...`.
 
 ## Route planning
 
@@ -102,8 +127,13 @@ resolution lidar normal with a fixed northwest sun. Flat ground keeps the photo.
 ## View
 
 ```sh
-cd viewer && python3 -m http.server 8000
+python3 scripts/serve.py          # http://localhost:8000
 ```
+
+This is a small multithreaded static server that also marks every response
+`Cache-Control: no-cache`, so the browser revalidates tiles after a rebuild
+instead of showing stale ones. Plain `python3 -m http.server` from `viewer/`
+works too, but needs a hard reload (Cmd+Shift+R) after any rebuild.
 
 Open http://localhost:8000. The viewer walks a quadtree over the tile pyramid
 every frame: a tile is split into its four children when one of its cells would
@@ -113,7 +143,7 @@ four children have loaded. Tiles stream in nearest-first (8 in flight), up to
 shader reads elevation from the tile's own heightmap texture. Normals come from
 neighbouring texels, so lighting is always at the tile's full resolution. On
 "Full" the terrain within about a kilometre of the camera is drawn at 1 m. Drag to orbit, right-drag to pan, scroll to zoom,
-`R` to reset, `T` for a top-down view. The panel controls mesh density,
+`R` to reset, `T` for a top-down view. The panel controls
 texture mode, cliff shading and wireframe. Hovering
 shows elevation and UTM coordinates sampled from the full heightmap.
 

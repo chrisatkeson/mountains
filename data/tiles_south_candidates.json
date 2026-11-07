@@ -1,0 +1,959 @@
+[
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 237206685,
+  "bbox": {
+   "minX": -106.12715076799998,
+   "maxX": -106.01324821199995,
+   "minY": 37.131019104000075,
+   "maxY": 37.22216223300006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 242997961,
+  "bbox": {
+   "minX": -106.12849497599996,
+   "maxX": -106.01445270599999,
+   "minY": 37.22114325000007,
+   "maxY": 37.312288274000025
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 235447593,
+  "bbox": {
+   "minX": -106.12984518099995,
+   "maxX": -106.01566257299999,
+   "minY": 37.31126598000003,
+   "maxY": 37.40241290400007
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 247104316,
+  "bbox": {
+   "minX": -106.13120141099995,
+   "maxX": -106.01687783799997,
+   "minY": 37.40138729200004,
+   "maxY": 37.492536124000026
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 251228008,
+  "bbox": {
+   "minX": -106.13256369399994,
+   "maxX": -106.01809852599996,
+   "minY": 37.491507185000046,
+   "maxY": 37.582657932000075
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 240724684,
+  "bbox": {
+   "minX": -106.13393205799997,
+   "maxX": -106.01932466199997,
+   "minY": 37.581625658000064,
+   "maxY": 37.672778325000024
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y418_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 232737709,
+  "bbox": {
+   "minX": -106.13530653399994,
+   "maxX": -106.02055627199996,
+   "minY": 37.671742710000046,
+   "maxY": 37.762897304000035
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x40y419_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 243372545,
+  "bbox": {
+   "minX": -106.13668714899995,
+   "maxX": -106.02179338199994,
+   "minY": 37.761858338000025,
+   "maxY": 37.85301486600008
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 244813260,
+  "bbox": {
+   "minX": -106.01445270599999,
+   "maxX": -105.90067854699998,
+   "minY": 37.13203478400004,
+   "maxY": 37.223074
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 244279197,
+  "bbox": {
+   "minX": -106.01566257299999,
+   "maxX": -105.90174927199996,
+   "minY": 37.22216223300006,
+   "maxY": 37.31320300300007
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 248141274,
+  "bbox": {
+   "minX": -106.01687783799997,
+   "maxX": -105.90282477299996,
+   "minY": 37.312288274000025,
+   "maxY": 37.40333060300003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 252270156,
+  "bbox": {
+   "minX": -106.01809852599996,
+   "maxX": -105.90390507199999,
+   "minY": 37.40241290400007,
+   "maxY": 37.49345680000005
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 256565706,
+  "bbox": {
+   "minX": -106.01932466199997,
+   "maxX": -105.90499019199996,
+   "minY": 37.492536124000026,
+   "maxY": 37.58358159000005
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 241737875,
+  "bbox": {
+   "minX": -106.02055627199996,
+   "maxX": -105.90608015599997,
+   "minY": 37.582657932000075,
+   "maxY": 37.67370497500008
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y418_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 238123380,
+  "bbox": {
+   "minX": -106.02179338199994,
+   "maxX": -105.90717498599997,
+   "minY": 37.672778325000024,
+   "maxY": 37.763826951000055
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y419_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 243219464,
+  "bbox": {
+   "minX": -106.02303601899996,
+   "maxX": -105.90827470499994,
+   "minY": 37.762897304000035,
+   "maxY": 37.85394751800004
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 292459370,
+  "bbox": {
+   "minX": -105.90174927199996,
+   "maxX": -105.78810412899998,
+   "minY": 37.132943596000075,
+   "maxY": 37.22387853600003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 270438016,
+  "bbox": {
+   "minX": -105.90282477299996,
+   "maxX": -105.78904106199997,
+   "minY": 37.223074,
+   "maxY": 37.31401015300003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 249792168,
+  "bbox": {
+   "minX": -105.90390507199999,
+   "maxX": -105.78998217399999,
+   "minY": 37.31320300300007,
+   "maxY": 37.404140374000065
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 261822906,
+  "bbox": {
+   "minX": -105.90499019199996,
+   "maxX": -105.79092748599999,
+   "minY": 37.40333060300003,
+   "maxY": 37.49426919600006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 259215335,
+  "bbox": {
+   "minX": -105.90608015599997,
+   "maxX": -105.79187701499995,
+   "minY": 37.49345680000005,
+   "maxY": 37.584396620000064
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 246612823,
+  "bbox": {
+   "minX": -105.90717498599997,
+   "maxX": -105.79283078299994,
+   "minY": 37.58358159000005,
+   "maxY": 37.674522643000046
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y418_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 243494133,
+  "bbox": {
+   "minX": -105.90827470499994,
+   "maxX": -105.79378880999997,
+   "minY": 37.67370497500008,
+   "maxY": 37.764647264000075
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y419_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 256955453,
+  "bbox": {
+   "minX": -105.90937933699996,
+   "maxX": -105.79475111499994,
+   "minY": 37.763826951000055,
+   "maxY": 37.85477048300004
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 282186589,
+  "bbox": {
+   "minX": -105.78904106199997,
+   "maxX": -105.67552555199995,
+   "minY": 37.13374552400006,
+   "maxY": 37.224575827000024
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 277212072,
+  "bbox": {
+   "minX": -105.78998217399999,
+   "maxX": -105.67632867299994,
+   "minY": 37.22387853600003,
+   "maxY": 37.314709710000045
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 259780218,
+  "bbox": {
+   "minX": -105.79092748599999,
+   "maxX": -105.67713537699996,
+   "minY": 37.31401015300003,
+   "maxY": 37.404842201000065
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 269513929,
+  "bbox": {
+   "minX": -105.79187701499995,
+   "maxX": -105.67794567999994,
+   "minY": 37.404140374000065,
+   "maxY": 37.49497330000003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 270229438,
+  "bbox": {
+   "minX": -105.79283078299994,
+   "maxX": -105.67875959999998,
+   "minY": 37.49426919600006,
+   "maxY": 37.585103006000054
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 274765700,
+  "bbox": {
+   "minX": -105.79378880999997,
+   "maxX": -105.67957715199998,
+   "minY": 37.584396620000064,
+   "maxY": 37.675231316000065
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y418_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 270882080,
+  "bbox": {
+   "minX": -105.79475111499994,
+   "maxX": -105.68039835499997,
+   "minY": 37.674522643000046,
+   "maxY": 37.76535823000006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y419_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 270556118,
+  "bbox": {
+   "minX": -105.79571771899998,
+   "maxX": -105.68122322599999,
+   "minY": 37.764647264000075,
+   "maxY": 37.85548374700005
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 245007679,
+  "bbox": {
+   "minX": -105.67632867299994,
+   "maxX": -105.56294340799997,
+   "minY": 37.13444055400004,
+   "maxY": 37.22516586200004
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 271352352,
+  "bbox": {
+   "minX": -105.67713537699996,
+   "maxX": -105.56361270099995,
+   "minY": 37.224575827000024,
+   "maxY": 37.315301662000024
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 256554421,
+  "bbox": {
+   "minX": -105.67794567999994,
+   "maxX": -105.56428497999997,
+   "minY": 37.314709710000045,
+   "maxY": 37.40543607500007
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 247276548,
+  "bbox": {
+   "minX": -105.67875959999998,
+   "maxX": -105.56496025899997,
+   "minY": 37.404842201000065,
+   "maxY": 37.49556910100006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 265843359,
+  "bbox": {
+   "minX": -105.67957715199998,
+   "maxX": -105.56563855099995,
+   "minY": 37.49497330000003,
+   "maxY": 37.585700737000025
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 277506583,
+  "bbox": {
+   "minX": -105.68039835499997,
+   "maxX": -105.56631987099996,
+   "minY": 37.585103006000054,
+   "maxY": 37.675830982000036
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y418_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 291326956,
+  "bbox": {
+   "minX": -105.68122322599999,
+   "maxX": -105.56700423299998,
+   "minY": 37.675231316000065,
+   "maxY": 37.765959837000025
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y419_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 307713584,
+  "bbox": {
+   "minX": -105.68205178199997,
+   "maxX": -105.56769165199995,
+   "minY": 37.76535823000006,
+   "maxY": 37.856087298000034
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 262521426,
+  "bbox": {
+   "minX": -105.56361270099995,
+   "maxX": -105.45035829299997,
+   "minY": 37.13502867700004,
+   "maxY": 37.22564863100007
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 244277189,
+  "bbox": {
+   "minX": -105.56428497999997,
+   "maxX": -105.45089374399998,
+   "minY": 37.22516586200004,
+   "maxY": 37.315786
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 261204931,
+  "bbox": {
+   "minX": -105.56496025899997,
+   "maxX": -105.45143158399998,
+   "minY": 37.315301662000024,
+   "maxY": 37.40592198500008
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 265829321,
+  "bbox": {
+   "minX": -105.56563855099995,
+   "maxX": -105.45197182399994,
+   "minY": 37.40543607500007,
+   "maxY": 37.496056587000055
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x45y416_CO_EasternColorado_2018_A18.tif",
+  "size": 22223618,
+  "bbox": {
+   "minX": -105.56631987099996,
+   "maxX": -105.45251447499999,
+   "minY": 37.49556910100006,
+   "maxY": 37.586189803000025
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 327976092,
+  "bbox": {
+   "minX": -105.56631987099996,
+   "maxX": -105.45251447499999,
+   "minY": 37.49556910100006,
+   "maxY": 37.586189803000025
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x45y417_CO_EasternColorado_2018_A18.tif",
+  "size": 122432176,
+  "bbox": {
+   "minX": -105.56700423299998,
+   "maxX": -105.45305954799994,
+   "minY": 37.585700737000025,
+   "maxY": 37.676321632000054
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 208804523,
+  "bbox": {
+   "minX": -105.56700423299998,
+   "maxX": -105.45305954799994,
+   "minY": 37.585700737000025,
+   "maxY": 37.676321632000054
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x45y418_CO_EasternColorado_2018_A18.tif",
+  "size": 54123359,
+  "bbox": {
+   "minX": -105.56769165199995,
+   "maxX": -105.45360705499996,
+   "minY": 37.675830982000036,
+   "maxY": 37.76645207400003
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y418_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 272168908,
+  "bbox": {
+   "minX": -105.56769165199995,
+   "maxX": -105.45360705499996,
+   "minY": 37.675830982000036,
+   "maxY": 37.76645207400003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x45y419_CO_EasternColorado_2018_A18.tif",
+  "size": 13229982,
+  "bbox": {
+   "minX": -105.56838214199996,
+   "maxX": -105.45415700699999,
+   "minY": 37.765959837000025,
+   "maxY": 37.85658112700003
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y419_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 340084388,
+  "bbox": {
+   "minX": -105.56838214199996,
+   "maxX": -105.45415700699999,
+   "minY": 37.765959837000025,
+   "maxY": 37.85658112700003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x46y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 295061404,
+  "bbox": {
+   "minX": -105.45089374399998,
+   "maxX": -105.33777079999999,
+   "minY": 37.135509881000075,
+   "maxY": 37.22602412700007
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x46y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 293713311,
+  "bbox": {
+   "minX": -105.45143158399998,
+   "maxX": -105.33817239799998,
+   "minY": 37.22564863100007,
+   "maxY": 37.316162715000075
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x46y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 272666569,
+  "bbox": {
+   "minX": -105.45197182399994,
+   "maxX": -105.33857578799996,
+   "minY": 37.315786,
+   "maxY": 37.40629992400005
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x46y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 298157891,
+  "bbox": {
+   "minX": -105.45251447499999,
+   "maxX": -105.33898097799994,
+   "minY": 37.40592198500008,
+   "maxY": 37.496435751000035
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x46y416_CO_EasternColorado_2018_A18.tif",
+  "size": 4850249,
+  "bbox": {
+   "minX": -105.45305954799994,
+   "maxX": -105.33938797599995,
+   "minY": 37.496056587000055,
+   "maxY": 37.586570196000025
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x46y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 335723138,
+  "bbox": {
+   "minX": -105.45305954799994,
+   "maxX": -105.33938797599995,
+   "minY": 37.496056587000055,
+   "maxY": 37.586570196000025
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x46y417_CO_EasternColorado_2018_A18.tif",
+  "size": 184954386,
+  "bbox": {
+   "minX": -105.45360705499996,
+   "maxX": -105.33979679099997,
+   "minY": 37.586189803000025,
+   "maxY": 37.67670325700004
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x46y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 164924780,
+  "bbox": {
+   "minX": -105.45360705499996,
+   "maxX": -105.33979679099997,
+   "minY": 37.586189803000025,
+   "maxY": 37.67670325700004
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x46y418_CO_EasternColorado_2018_A18.tif",
+  "size": 260866278,
+  "bbox": {
+   "minX": -105.45415700699999,
+   "maxX": -105.34020743099995,
+   "minY": 37.676321632000054,
+   "maxY": 37.76683493400003
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x46y419_CO_EasternColorado_2018_A18.tif",
+  "size": 247397144,
+  "bbox": {
+   "minX": -105.45470941699995,
+   "maxX": -105.34061990499998,
+   "minY": 37.76645207400003,
+   "maxY": 37.85696522400008
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x46y419_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 31037535,
+  "bbox": {
+   "minX": -105.45470941699995,
+   "maxX": -105.34061990499998,
+   "minY": 37.76645207400003,
+   "maxY": 37.85696522400008
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x47y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 326830609,
+  "bbox": {
+   "minX": -105.33817239799998,
+   "maxX": -105.22518152399999,
+   "minY": 37.13588415900006,
+   "maxY": 37.22629234200008
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x47y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 340121167,
+  "bbox": {
+   "minX": -105.33857578799996,
+   "maxX": -105.22544926099994,
+   "minY": 37.22602412700007,
+   "maxY": 37.31643180200007
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x47y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 336440775,
+  "bbox": {
+   "minX": -105.33898097799994,
+   "maxX": -105.22571819199999,
+   "minY": 37.316162715000075,
+   "maxY": 37.40656988500007
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x47y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 338314792,
+  "bbox": {
+   "minX": -105.33938797599995,
+   "maxX": -105.22598832299997,
+   "minY": 37.40629992400005,
+   "maxY": 37.49670658700006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x47y416_CO_EasternColorado_2018_A18.tif",
+  "size": 4880676,
+  "bbox": {
+   "minX": -105.33979679099997,
+   "maxX": -105.22625965999998,
+   "minY": 37.496435751000035,
+   "maxY": 37.58684191000003
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x47y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 329557881,
+  "bbox": {
+   "minX": -105.33979679099997,
+   "maxX": -105.22625965999998,
+   "minY": 37.496435751000035,
+   "maxY": 37.58684191000003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x47y417_CO_EasternColorado_2018_A18.tif",
+  "size": 135385102,
+  "bbox": {
+   "minX": -105.34020743099995,
+   "maxX": -105.22653220799998,
+   "minY": 37.586570196000025,
+   "maxY": 37.676975851000066
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x47y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 215994375,
+  "bbox": {
+   "minX": -105.34020743099995,
+   "maxX": -105.22653220799998,
+   "minY": 37.586570196000025,
+   "maxY": 37.676975851000066
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x47y418_CO_EasternColorado_2018_A18.tif",
+  "size": 253781762,
+  "bbox": {
+   "minX": -105.34061990499998,
+   "maxX": -105.22680597299995,
+   "minY": 37.67670325700004,
+   "maxY": 37.76710840900006
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x47y419_CO_EasternColorado_2018_A18.tif",
+  "size": 258133593,
+  "bbox": {
+   "minX": -105.34103422299995,
+   "maxX": -105.22708096099996,
+   "minY": 37.76683493400003,
+   "maxY": 37.85723958400007
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y412_CO_EasternColorado_2018_A18.tif",
+  "size": 121701690,
+  "bbox": {
+   "minX": -105.22544926099994,
+   "maxX": -105.11259105899995,
+   "minY": 37.13615150500004,
+   "maxY": 37.22645327300006
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x48y412_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 197549254,
+  "bbox": {
+   "minX": -105.22544926099994,
+   "maxX": -105.11259105899995,
+   "minY": 37.13615150500004,
+   "maxY": 37.22645327300006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y413_CO_EasternColorado_2018_A18.tif",
+  "size": 132119650,
+  "bbox": {
+   "minX": -105.22571819199999,
+   "maxX": -105.11272492899997,
+   "minY": 37.22629234200008,
+   "maxY": 37.31659325600003
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x48y413_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 191387289,
+  "bbox": {
+   "minX": -105.22571819199999,
+   "maxX": -105.11272492899997,
+   "minY": 37.22629234200008,
+   "maxY": 37.31659325600003
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y414_CO_EasternColorado_2018_A18.tif",
+  "size": 149567149,
+  "bbox": {
+   "minX": -105.22598832299997,
+   "maxX": -105.11285939599998,
+   "minY": 37.31643180200007,
+   "maxY": 37.40673186300006
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x48y414_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 161543157,
+  "bbox": {
+   "minX": -105.22598832299997,
+   "maxX": -105.11285939599998,
+   "minY": 37.31643180200007,
+   "maxY": 37.40673186300006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y415_CO_EasternColorado_2018_A18.tif",
+  "size": 137059585,
+  "bbox": {
+   "minX": -105.22625965999998,
+   "maxX": -105.11299446299995,
+   "minY": 37.40656988500007,
+   "maxY": 37.496869091000065
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x48y415_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 180696452,
+  "bbox": {
+   "minX": -105.22625965999998,
+   "maxX": -105.11299446299995,
+   "minY": 37.40656988500007,
+   "maxY": 37.496869091000065
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y416_CO_EasternColorado_2018_A18.tif",
+  "size": 199687862,
+  "bbox": {
+   "minX": -105.22653220799998,
+   "maxX": -105.11313013299997,
+   "minY": 37.49670658700006,
+   "maxY": 37.58700494000004
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x48y416_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 106891451,
+  "bbox": {
+   "minX": -105.22653220799998,
+   "maxX": -105.11313013299997,
+   "minY": 37.49670658700006,
+   "maxY": 37.58700494000004
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y417_CO_EasternColorado_2018_A18.tif",
+  "size": 248127769,
+  "bbox": {
+   "minX": -105.22680597299995,
+   "maxX": -105.11326640799996,
+   "minY": 37.58684191000003,
+   "maxY": 37.67713940900006
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x48y417_CO_SanLuisJuanMiguel_2020_D20.tif",
+  "size": 32243625,
+  "bbox": {
+   "minX": -105.22680597299995,
+   "maxX": -105.11326640799996,
+   "minY": 37.58684191000003,
+   "maxY": 37.67713940900006
+  },
+  "date": "2021-11-24"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y418_CO_EasternColorado_2018_A18.tif",
+  "size": 256275879,
+  "bbox": {
+   "minX": -105.22708096099996,
+   "maxX": -105.11340329199999,
+   "minY": 37.676975851000066,
+   "maxY": 37.76727249600003
+  },
+  "date": "2023-05-26"
+ },
+ {
+  "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x48y419_CO_EasternColorado_2018_A18.tif",
+  "size": 249663496,
+  "bbox": {
+   "minX": -105.22735717699999,
+   "maxX": -105.11354078799997,
+   "minY": 37.76710840900006,
+   "maxY": 37.857404201000065
+  },
+  "date": "2023-05-26"
+ }
+]

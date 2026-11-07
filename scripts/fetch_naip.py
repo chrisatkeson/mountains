@@ -67,6 +67,7 @@ def main():
     out.resize((1400, 1400 * H // W)).save(os.path.splitext(a.out)[0] + "_preview.png")
     meta["naip"] = os.path.basename(a.out)
     meta["naip_credit"] = "USDA NAIP via USGS The National Map"
+    meta["naip_bounds"] = b          # the extent this image covers; the viewer maps it there, not to the full mosaic
     json.dump(meta, open(a.meta, "w"), indent=2)
     print("wrote", a.out, f"{os.path.getsize(a.out) / 1e6:.0f} MB")
 

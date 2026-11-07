@@ -148,6 +148,7 @@ def main():
         prev = json.load(open(old))
         if prev.get("naip") and os.path.exists(os.path.join(a.out, prev["naip"])):
             meta["naip"] = prev["naip"]; meta["naip_credit"] = prev.get("naip_credit", "")
+            if prev.get("naip_bounds"): meta["naip_bounds"] = prev["naip_bounds"]
     with open(old, "w") as f:
         json.dump(meta, f, indent=2)
     print("wrote", sorted(os.listdir(a.out)))

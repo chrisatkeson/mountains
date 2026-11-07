@@ -15,6 +15,9 @@
   #panel input[type=range] { flex: 1; min-width: 0; }
   #panel select { background: #1b1e25; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 2px 4px; }
   #panel button { background: #1b1e25; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+  .pinrow { display: flex; gap: 6px; align-items: center; margin: 3px 0; }
+  .pinrow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ddd; }
+  .pinrow button { padding: 1px 6px; font-size: 11px; }
   #panel .val { width: 44px; text-align: right; color: #9ab; font-variant-numeric: tabular-nums; }
   #readout { position: absolute; bottom: 12px; left: 12px; background: rgba(15,17,22,.85); border: 1px solid #333; border-radius: 8px; padding: 8px 12px; font-variant-numeric: tabular-nums; min-width: 260px; }
   #status { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; color: #9ab; pointer-events: none; }
@@ -29,12 +32,12 @@
   <h1 id="title">Terrain</h1>
   <div class="muted" id="desc" hidden></div>
   <label hidden><span>Exaggeration</span><input id="exag" type="range" min="0.5" max="4" step="0.1" value="1"><span class="val" id="exagv">1.0×</span></label>
-  <label><span>Mesh detail</span>
+  <label hidden><span>Mesh detail</span>
     <select id="detail">
       <option value="8">Low</option>
       <option value="4">Medium</option>
-      <option value="2" selected>High</option>
-      <option value="1">Full (1 m near camera)</option>
+      <option value="2">High</option>
+      <option value="1" selected>Full (1 m near camera)</option>
     </select>
   </label>
   <label><span>Texture</span>
@@ -53,6 +56,13 @@
   <label><span>Wireframe</span><input id="wire" type="checkbox"></label>
   <button id="exitGround" style="display:none;margin-top:6px">Back to map view (Esc)</button>
   <div hidden><button id="copyLink"></button><span id="copied"></span></div>
+  <h1 style="margin-top:14px">Pins</h1>
+  <div style="display:flex;gap:6px">
+    <input id="pinInput" placeholder="38°01'43.0&quot;N 105°41'00.8&quot;W · 38.0286,-105.6836 · 440009,4209210" style="flex:1;min-width:0;background:#1b1e25;color:#ddd;border:1px solid #444;border-radius:4px;padding:3px 6px">
+    <button id="pinAdd">Add</button>
+    <button id="pinPlace" title="Click the terrain to drop a pin">Place</button>
+  </div>
+  <div id="pinList" class="muted" style="margin-top:4px"></div>
   <h1 style="margin-top:14px">Routes</h1>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <button id="rtEdit">Start route</button>
@@ -101,6 +111,10 @@ const camera = new THREE.PerspectiveCamera(50, 1, 10, 500000);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.08;
 controls.maxPolarAngle = Math.PI / 2 - 0.01;
+controls.zoomToCursor = true;          // wheel zooms toward the terrain under the cursor, not a fixed centre
+controls.screenSpacePanning = false;   // right-drag pans parallel to the ground
+controls.rotateSpeed = 0.5;
+controls.minDistance = 20;
 
 // ---- Data ------------------------------------------------------------------
 const meta = await (await fetch('data/meta.json', { cache: 'no-cache' })).json();
@@ -143,7 +157,7 @@ const decode = `
   }`;
 const vert = `
   uniform sampler2D hmap; uniform float tzmin, tzrange, zmid, exag, skirt, cell;
-  uniform vec2 extent, origin; uniform vec3 uvXform;
+  uniform vec2 extent, origin; uniform vec3 uvXform; uniform vec4 gUv;
   out vec2 vUv; out vec2 vUvTile; out vec2 vCell; out float vValid; out vec3 vWorld;
   ${decode}
   void main() {
@@ -154,7 +168,7 @@ const vert = `
     vValid = (t.r * 255.0 + t.g * 65280.0) > 0.5 ? 1.0 : 0.0;
     vec3 p = vec3(origin.x + position.x * cell, (cellHeight(c) - zmid) * exag - position.z * skirt, origin.y + position.y * cell);
     vCell = position.xy; vWorld = p;
-    vUv = vec2((p.x + extent.x * 0.5) / extent.x, 1.0 - (p.z + extent.y * 0.5) / extent.y);
+    vUv = vec2((p.x - gUv.x) * gUv.z, 1.0 - (p.z - gUv.y) * gUv.w);   // global texture mapped to the area it covers
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }`;
 const frag = `
@@ -194,9 +208,14 @@ const frag = `
     float dz = (HB(ivec2(0, 1)) - HB(ivec2(0, -1))) * exag / (2.0 * cell);
     vec3 n = normalize(vec3(-dx, 1.0, -dz));
     vec2 uv = tiled ? vUvTile : vUv;
-    vec3 col = useMap ? texture(map, uv).rgb : baseColor;
+    bool inside = tiled || all(greaterThanEqual(uv, vec2(0.0))) && all(lessThanEqual(uv, vec2(1.0)));
+    bool haveMap = useMap && inside;
+    vec3 col = haveMap ? texture(map, uv).rgb : baseColor;
+    // Coarse imagery tiles built before neighbouring area existed hold a flat placeholder
+    // grey there; treat it as "no imagery" so the terrain shows lit relief instead.
+    if (haveMap && tiled && distance(col, vec3(0.157, 0.173, 0.204)) < 0.03) { haveMap = false; col = baseColor; }
     float light = ambI + sunI * max(dot(n, sunDir), 0.0);
-    if (lit) col *= light;
+    if (lit || !haveMap) col *= light;      // areas without imagery are always lit so relief still reads
     if (cliffs) {
       // Orthoimagery has no information on near-vertical faces: blend to a triplanar
       // rock detail tinted by the blurred local aerial colour, and re-light by slope.
@@ -234,6 +253,8 @@ const U = {   // uniforms shared by every tile material (same objects, so one up
   tzmin: { value: index.zmin }, tzrange: { value: index.zrange }, zmid: { value: zmid },
   exag: { value: 1 }, extent: { value: new THREE.Vector2(sizeX, sizeY) },
   lit: { value: true }, cliffs: { value: false }, rock: { value: rockTex },
+  gUv: { value: (() => { const nb = meta.naip_bounds || meta.bounds; const x0 = nb.left - meta.bounds.left - sizeX / 2, z0 = meta.bounds.top - nb.top - sizeY / 2;
+                          return new THREE.Vector4(x0, z0, 1 / (nb.right - nb.left), 1 / (nb.top - nb.bottom)); })() },
   baseColor: { value: new THREE.Color(0xb8a98a) }, sunDir: { value: new THREE.Vector3(0, 1, 0) },
   sunI: { value: 1.1 }, ambI: { value: 0.35 },
   fogOn: { value: false }, fogColor: { value: SKY.clone() }, fogRange: { value: new THREE.Vector2(15000, 90000) },
@@ -292,7 +313,7 @@ const DEBUG = new URLSearchParams(location.search).has('debug');
 async function load(t) {
   t.state = 'loading'; t.started = performance.now(); inflight++;
   try {
-    const r = await fetch(`data/tiles/${t.L}/${t.tx}_${t.ty}.bin.gz?v=${index.zmin}`);
+    const r = await fetch(`data/tiles/${t.L}/${t.tx}_${t.ty}.bin.gz?v=${index.built || index.zmin}`);   // rebuilds change the stamp, so stale cached tiles are never reused
     if (!r.ok) throw new Error(r.status);
     const buf = await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
     if (buf.byteLength !== TA * TA * 2) throw new Error(`tile is ${buf.byteLength} bytes, expected ${TA * TA * 2}`);
@@ -580,6 +601,16 @@ function exitGround() {
 $('exitGround').onclick = exitGround;
 canvas.addEventListener('pointerdown', ev => {
   if (routePointerDown(ev)) { down = null; return; }
+  if (!ground.active && controls.enabled && ev.button === 0 && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {   // rotate only, never pan
+    const hit = pickTerrain(ev.clientX, ev.clientY);
+    if (hit) {
+      // Move the orbit pivot to the grabbed point, but only if the camera would still sit
+      // above it within the polar limit; otherwise the clamp would snap the view.
+      const t = new THREE.Vector3(hit.x, (hit.ez - zmid) * U.exag.value, hit.z), v = camera.position.clone().sub(t);
+      const polar = Math.acos(THREE.MathUtils.clamp(v.y / v.length(), -1, 1));
+      if (polar < controls.maxPolarAngle - 0.05 && v.length() > controls.minDistance * 2) controls.target.copy(t);
+    }
+  }
   down = { x: ev.clientX, y: ev.clientY, button: ev.button, yaw: ground.yaw, pitch: ground.pitch };
   if (ground.active && ev.button === 0) ground.dragging = true;
 });
@@ -593,7 +624,7 @@ canvas.addEventListener('pointermove', ev => {
 canvas.addEventListener('pointerup', ev => {
   ground.dragging = false;
   const wasClick = down && down.button === 0 && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) <= 4;
-  if (routePointerUp(ev, wasClick)) { down = null; return; }
+  if (pinPointerUp(ev, wasClick) || routePointerUp(ev, wasClick)) { down = null; return; }
   if (!down || down.button !== 0) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y);
   down = null;
@@ -646,8 +677,9 @@ function syncUrl() {
       const c = toUTM({ x: camera.position.x, z: camera.position.z }), t = toUTM({ x: controls.target.x, z: controls.target.z });
       q.set('view', `${c.E.toFixed(1)},${c.N.toFixed(1)},${(camera.position.y + zmid).toFixed(1)},${t.E.toFixed(1)},${t.N.toFixed(1)},${(controls.target.y + zmid).toFixed(1)}`);
     }
-    q.set('detail', $('detail').value); q.set('tex', $('tex').value);
+    q.set('tex', $('tex').value);
     q.set('cliffs', $('cliffs').value);
+    if (pins.length) q.set('pins', pins.map(x => `${x.E.toFixed(0)},${x.N.toFixed(0)},${encodeURIComponent(x.name)}`).join(';')); else q.delete('pins');
     if (route.name) q.set('route', route.name);
     else if (route.pts.length >= 2 && route.pts.length <= 40) q.set('pts', route.pts.map(p => `${p[0].toFixed(0)},${p[1].toFixed(0)}`).join(';'));
     if ($('wire').checked) q.set('wire', 1);
@@ -692,6 +724,90 @@ $('copyLink').onclick = async () => {
   }
 }
 
+const toWorld = (E, N) => ({ x: E - meta.bounds.left - sizeX / 2, z: meta.bounds.top - N - sizeY / 2 });
+function surfaceY(x, zz) { const e = sampleZ(x, zz); return (Number.isNaN(e) ? meta.zmin : e) - zmid; }
+// ---- Pins -------------------------------------------------------------------
+// A pin is a named UTM point. Pins live in the URL (pins=E,N,name;...) so a link
+// reproduces them; each row has Go (fly the camera there) and Link (copy a URL
+// centred on that pin).
+const pins = [];               // { E, N, name, mesh }
+let placingPin = false;
+const pinGroup = new THREE.Group(); scene.add(pinGroup);
+const pinMat = new THREE.MeshBasicMaterial({ color: 0x33ddff }), poleMat = new THREE.LineBasicMaterial({ color: 0x33ddff });
+function parseCoord(text) {
+  const t = text.trim().replace(/[“”]/g, '"').replace(/[‘’′]/g, "'").replace(/″/g, '"');
+  // Degrees-minutes-seconds with hemisphere letters, in either order.
+  const dms = [...t.matchAll(/(\d{1,3})[°\s]+(\d{1,2})['\s]+(\d{1,2}(?:\.\d+)?)"?\s*([NSEW])/gi)];
+  if (dms.length === 2) {
+    const v = dms.map(m => (+m[1] + m[2] / 60 + m[3] / 3600) * (/[SW]/i.test(m[4]) ? -1 : 1));
+    const lat = /[NS]/i.test(dms[0][4]) ? v[0] : v[1], lon = /[NS]/i.test(dms[0][4]) ? v[1] : v[0];
+    return latLonToUtm(lat, lon);
+  }
+  const nums = t.match(/-?\d+(?:\.\d+)?/g);
+  if (!nums || nums.length < 2) return null;
+  let a = parseFloat(nums[0]), b = parseFloat(nums[1]);
+  if (Math.abs(a) <= 90 && Math.abs(b) <= 180) { if (/[Ss]/.test(t)) a = -Math.abs(a); if (/[Ww]/.test(t)) b = -Math.abs(b); return latLonToUtm(a, b); }
+  return [a, b];                                       // UTM 13N easting, northing
+}
+function addPin(E, N, name) {
+  const w = toWorld(E, N), y = surfaceY(w.x, w.z);
+  const g = new THREE.Group();
+  const head = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), pinMat); head.position.y = 4; g.add(head);
+  const pole = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 3.2, 0)]), poleMat); g.add(pole);
+  g.position.set(w.x, y, w.z); pinGroup.add(g);
+  pins.push({ E, N, name: name || `Pin ${pins.length + 1}`, mesh: g });
+  renderPins(); syncUrl();
+}
+function pinUrl(p) {
+  const q = new URLSearchParams(location.search);
+  q.set('view', `${(p.E - 1100).toFixed(0)},${(p.N - 1100).toFixed(0)},${(sampleZ(...Object.values(toWorld(p.E, p.N))) + 700).toFixed(0)},${p.E.toFixed(0)},${p.N.toFixed(0)}`);
+  q.delete('ground'); q.delete('yaw'); q.delete('pitch'); q.delete('fov');
+  q.set('pins', pins.map(x => `${x.E.toFixed(0)},${x.N.toFixed(0)},${encodeURIComponent(x.name)}`).join(';'));
+  return location.origin + location.pathname + '?' + q.toString();
+}
+function goToPin(p) {
+  if (ground.active) exitGround();
+  const w = toWorld(p.E, p.N), y = surfaceY(w.x, w.z);
+  controls.target.set(w.x, y, w.z); camera.position.set(w.x - 1100, y + 700, w.z + 1100); controls.update(); syncUrl();
+}
+function renderPins() {
+  const el = $('pinList'); el.innerHTML = '';
+  pins.forEach((p, i) => {
+    const w = toWorld(p.E, p.N), [la, lo] = utmToLatLon(p.E, p.N);
+    const row = document.createElement('div'); row.className = 'pinrow';
+    row.innerHTML = `<span title="${la.toFixed(6)}, ${lo.toFixed(6)} · E ${p.E.toFixed(0)} N ${p.N.toFixed(0)}">${p.name} · ${(surfaceY(w.x, w.z) + zmid).toFixed(0)} m</span>` +
+      `<button data-a="go">Go</button><button data-a="link">Link</button><button data-a="rm" title="Remove">×</button>`;
+    row.querySelector('[data-a=go]').onclick = () => goToPin(p);
+    row.querySelector('[data-a=link]').onclick = async b => { const u = pinUrl(p); try { await navigator.clipboard.writeText(u); b.target.textContent = 'Copied'; } catch { prompt('Pin link', u); } setTimeout(() => { b.target.textContent = 'Link'; }, 1500); };
+    row.querySelector('[data-a=rm]').onclick = () => { pinGroup.remove(p.mesh); pins.splice(i, 1); renderPins(); syncUrl(); };
+    el.appendChild(row);
+  });
+}
+$('pinAdd').onclick = () => {
+  const c = parseCoord($('pinInput').value);
+  if (!c) { $('pinInput').style.borderColor = '#e55'; setTimeout(() => $('pinInput').style.borderColor = '#444', 1200); return; }
+  const w = toWorld(...c);
+  if (Number.isNaN(sampleZ(w.x, w.z))) { alert('That point is outside the terrain.'); return; }
+  addPin(c[0], c[1]); $('pinInput').value = ''; goToPin(pins[pins.length - 1]);
+};
+$('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('pinAdd').click(); });
+$('pinPlace').onclick = () => { placingPin = !placingPin; $('pinPlace').textContent = placingPin ? 'Click terrain…' : 'Place'; };
+function pinPointerUp(ev, wasClick) {
+  if (!placingPin || !wasClick) return false;
+  const hit = pickTerrain(ev.clientX, ev.clientY);
+  if (hit) { const u = toUTM(hit); addPin(u.E, u.N); }
+  placingPin = false; $('pinPlace').textContent = 'Place';
+  return true;
+}
+function pinFrame() {
+  const focal = innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+  for (const p of pins) {
+    const d = camera.position.distanceTo(p.mesh.position), sc = Math.max(0.5, d * 9 / focal);
+    p.mesh.scale.setScalar(sc);                            // pole base sits on the ground, head above
+    p.mesh.position.y = surfaceY(p.mesh.position.x, p.mesh.position.z);
+  }
+}
+
 // ---- Route planning ---------------------------------------------------------
 // Waypoints live in UTM metres (E, N). The drawn line is draped on the heightfield,
 // coloured by slope, and the stats come from the draped profile. Routes persist in
@@ -704,8 +820,6 @@ let rtLine = null;
 const wpGeo = new THREE.SphereGeometry(1, 12, 8);
 const wpMatN = new THREE.MeshBasicMaterial({ color: 0xffffff }), wpMatS = new THREE.MeshBasicMaterial({ color: 0xff9f1c });
 const markers = [];
-const toWorld = (E, N) => ({ x: E - meta.bounds.left - sizeX / 2, z: meta.bounds.top - N - sizeY / 2 });
-function surfaceY(x, zz) { const e = sampleZ(x, zz); return (Number.isNaN(e) ? meta.zmin : e) - zmid; }
 
 // Drape each segment at ~2 m spacing; returns [{x, y(world), z, d(dist m), ele}]
 let draped = [];
@@ -900,6 +1014,7 @@ $('rtImport').onchange = async () => {
 };
 {
   const qs = new URLSearchParams(location.search), r = qs.get('route'), pts = qs.get('pts');
+  if (qs.get('pins')) for (const t of qs.get('pins').split(';')) { const [E, N, name] = t.split(','); if (Number.isFinite(+E) && Number.isFinite(+N)) addPin(+E, +N, name ? decodeURIComponent(name) : ''); }
   if (r && store()[r]) { route.pts = store()[r].pts.map(p => [...p]); route.name = r; refreshList(); rebuildRoute(); }
   else if (pts) { route.pts = pts.split(';').map(t => t.split(',').map(Number)).filter(p => p.length === 2 && p.every(Number.isFinite)); rebuildRoute(); }
 }
@@ -912,7 +1027,7 @@ function resize() {
 addEventListener('resize', resize); resize();
 $('status').remove();
 renderer.setAnimationLoop(() => {
-  walk(); routeFrame();
+  walk(); routeFrame(); pinFrame();
   if (!ground.active) controls.update();
   camera.updateMatrixWorld();
   updateLOD();

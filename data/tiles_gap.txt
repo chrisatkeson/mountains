@@ -1,0 +1,8 @@
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x45y418_CO_EasternColorado_2018_A18.tif
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x46y418_CO_EasternColorado_2018_A18.tif
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_EasternColorado_2018_A18/TIFF/USGS_1M_13_x47y418_CO_EasternColorado_2018_A18.tif
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x41y418_CO_SanLuisJuanMiguel_2020_D20.tif
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x42y418_CO_SanLuisJuanMiguel_2020_D20.tif
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x43y418_CO_SanLuisJuanMiguel_2020_D20.tif
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x44y418_CO_SanLuisJuanMiguel_2020_D20.tif
+https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/CO_SanLuisJuanMiguel_2020_D20/TIFF/USGS_1M_13_x45y418_CO_SanLuisJuanMiguel_2020_D20.tif
