@@ -55,8 +55,27 @@ the viewer still uses its coarse heightmap for picking before fine tiles load.
 Fetches USDA NAIP orthoimagery for the mosaic extent from the USGS National
 Map ImageServer in 2000 px tiles and stitches them into `viewer/data/naip.jpg`.
 The viewer uses it as the default texture when present, rendered unlit because
-the photography already contains the sun; the sun sliders apply to the other
+the photography already contains the sun; a fixed northwest sun lights the other
 texture modes.
+
+## Route planning
+
+The Routes section of the panel plans off-trail lines on the lidar terrain:
+
+- **Start route**, then click the terrain to add waypoints; drag a waypoint to
+  move it; click one and press Delete to remove it; Undo removes the last.
+- The line is draped on the heightfield every 2 m and coloured by slope
+  (green under 20°, yellow around 25°, red near 45°, magenta above). Stats show
+  distance, gain and loss (3 m hysteresis so lidar noise doesn't inflate them),
+  the steepest 20 m stretch, and an elevation profile.
+- **Save** keeps routes in the browser (localStorage) by name; the URL carries
+  the saved name, or the waypoints themselves for short unsaved routes.
+- **Export GPX** writes waypoints plus a draped track with lidar elevations in
+  WGS84, which Gaia GPS, Garmin and similar devices import directly. **Import
+  GPX** loads a route, track, or waypoints from such a file.
+
+Elevations are bare earth: the planner knows slope and cliffs but nothing
+about vegetation, deadfall, or snow.
 
 ## Full-resolution imagery tiles (optional, slow)
 
@@ -78,7 +97,7 @@ cliffs produces vertical streaks. With "Cliff shading" set to On (default Off), 
 blends faces steeper than about 40° to a triplanar-mapped procedural rock
 texture (`viewer/data/rock.png`, from `scripts/make_rock_texture.py`) tinted
 by the blurred local aerial colour, and lights those faces from the full
-resolution lidar normal using the sun sliders. Flat ground keeps the photo.
+resolution lidar normal with a fixed northwest sun. Flat ground keeps the photo.
 
 ## View
 
@@ -94,8 +113,8 @@ four children have loaded. Tiles stream in nearest-first (8 in flight), up to
 shader reads elevation from the tile's own heightmap texture. Normals come from
 neighbouring texels, so lighting is always at the tile's full resolution. On
 "Full" the terrain within about a kilometre of the camera is drawn at 1 m. Drag to orbit, right-drag to pan, scroll to zoom,
-`R` to reset, `T` for a top-down view. The panel controls vertical
-exaggeration, mesh density, texture mode, sun position and wireframe. Hovering
+`R` to reset, `T` for a top-down view. The panel controls mesh density,
+texture mode, cliff shading and wireframe. Hovering
 shows elevation and UTM coordinates sampled from the full heightmap.
 
 The URL always mirrors the current camera (map or ground view) and every panel

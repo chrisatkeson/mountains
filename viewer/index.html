@@ -10,6 +10,7 @@
   #panel { position: absolute; top: 12px; left: 12px; background: rgba(15,17,22,.85); border: 1px solid #333; border-radius: 8px; padding: 12px 14px; width: 270px; backdrop-filter: blur(6px); }
   #panel h1 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
   #panel label { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; gap: 8px; }
+  [hidden] { display: none !important; }
   #panel label > span:first-child { white-space: nowrap; }
   #panel input[type=range] { flex: 1; min-width: 0; }
   #panel select { background: #1b1e25; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 2px 4px; }
@@ -26,8 +27,8 @@
 <div id="status">Loading terrain…</div>
 <div id="panel">
   <h1 id="title">Terrain</h1>
-  <div class="muted" id="desc"></div>
-  <label><span>Exaggeration</span><input id="exag" type="range" min="0.5" max="4" step="0.1" value="1"><span class="val" id="exagv">1.0×</span></label>
+  <div class="muted" id="desc" hidden></div>
+  <label hidden><span>Exaggeration</span><input id="exag" type="range" min="0.5" max="4" step="0.1" value="1"><span class="val" id="exagv">1.0×</span></label>
   <label><span>Mesh detail</span>
     <select id="detail">
       <option value="8">Low</option>
@@ -44,18 +45,33 @@
       <option value="none">Lit surface</option>
     </select>
   </label>
-  <label title="Lights the hillshade and lit-surface textures, and the steep faces in imagery mode"><span>Sun azimuth</span><input id="az" type="range" min="0" max="360" step="1" value="315"><span class="val" id="azv">315°</span></label>
-  <label><span>Sun altitude</span><input id="alt" type="range" min="5" max="85" step="1" value="40"><span class="val" id="altv">40°</span></label>
+  <label hidden><span>Sun azimuth</span><input id="az" type="range" min="0" max="360" step="1" value="315"><span class="val" id="azv">315°</span></label>
+  <label hidden><span>Sun altitude</span><input id="alt" type="range" min="5" max="85" step="1" value="40"><span class="val" id="altv">40°</span></label>
   <label title="Blend steep faces to a slope-lit rock detail texture instead of stretched aerial pixels"><span>Cliff shading</span>
     <select id="cliffs"><option value="0" selected>Off</option><option value="1">On</option></select>
   </label>
   <label><span>Wireframe</span><input id="wire" type="checkbox"></label>
-  <div class="muted">Drag to orbit · right-drag to pan · wheel to zoom · <kbd>R</kbd> reset · <kbd>T</kbd> top-down</div>
-  <div class="muted"><b>Click</b> a point to stand there. On the ground: drag to look, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk, <kbd>Shift</kbd> run, wheel zooms, <kbd>Esc</kbd> returns.</div>
   <button id="exitGround" style="display:none;margin-top:6px">Back to map view (Esc)</button>
-  <div style="margin-top:6px;display:flex;gap:6px;align-items:center"><button id="copyLink">Copy view link</button><span class="muted" id="copied"></span></div>
-  <div class="muted">The URL always holds the current view and settings, so a reload or bookmark restores it exactly.</div>
-  <div class="muted" id="stats"></div>
+  <div hidden><button id="copyLink"></button><span id="copied"></span></div>
+  <h1 style="margin-top:14px">Routes</h1>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button id="rtEdit">Start route</button>
+    <button id="rtUndo" title="Remove last waypoint">Undo</button>
+    <button id="rtClear">Clear</button>
+  </div>
+  <div class="muted" id="rtHelp" style="margin-top:4px">Start a route, then click the terrain to add waypoints. Drag a waypoint to move it, click one and press Delete to remove it.</div>
+  <div id="rtStats" class="muted" style="margin-top:6px"></div>
+  <canvas id="rtProfile" width="260" height="70" style="display:block;width:100%;height:70px;margin:4px 0;background:#0b0d10;border-radius:4px"></canvas>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+    <select id="rtList" style="flex:1"><option value="">Saved routes…</option></select>
+    <button id="rtSave">Save</button>
+    <button id="rtDelete">Delete</button>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+    <button id="rtExport" title="GPX for Gaia GPS, Garmin, etc.">Export GPX</button>
+    <button id="rtImportBtn">Import GPX</button><input id="rtImport" type="file" accept=".gpx" hidden>
+  </div>
+  <div class="muted" id="stats" hidden></div>
 </div>
 <div id="readout">Hover over the terrain for coordinates.</div>
 
@@ -68,6 +84,9 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
 const $ = id => document.getElementById(id);
 const status = msg => { const s = $('status'); if (s) s.textContent = msg; };
@@ -513,6 +532,7 @@ function describe(hit) {
   return `Elev ${hit.ez.toFixed(1)} m (${(hit.ez * 3.28084).toFixed(0)} ft)   ·   ${meta.crs}  E ${u.E.toFixed(0)}  N ${u.N.toFixed(0)}`;
 }
 canvas.addEventListener('pointermove', ev => {
+  if (routePointerMove(ev)) return;
   if (ground.active && ground.dragging) return;
   const hit = pickTerrain(ev.clientX, ev.clientY);
   $('readout').textContent = hit ? (ground.active ? 'Looking at: ' : '') + describe(hit)
@@ -559,6 +579,7 @@ function exitGround() {
 }
 $('exitGround').onclick = exitGround;
 canvas.addEventListener('pointerdown', ev => {
+  if (routePointerDown(ev)) { down = null; return; }
   down = { x: ev.clientX, y: ev.clientY, button: ev.button, yaw: ground.yaw, pitch: ground.pitch };
   if (ground.active && ev.button === 0) ground.dragging = true;
 });
@@ -571,6 +592,8 @@ canvas.addEventListener('pointermove', ev => {
 });
 canvas.addEventListener('pointerup', ev => {
   ground.dragging = false;
+  const wasClick = down && down.button === 0 && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) <= 4;
+  if (routePointerUp(ev, wasClick)) { down = null; return; }
   if (!down || down.button !== 0) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y);
   down = null;
@@ -623,9 +646,10 @@ function syncUrl() {
       const c = toUTM({ x: camera.position.x, z: camera.position.z }), t = toUTM({ x: controls.target.x, z: controls.target.z });
       q.set('view', `${c.E.toFixed(1)},${c.N.toFixed(1)},${(camera.position.y + zmid).toFixed(1)},${t.E.toFixed(1)},${t.N.toFixed(1)},${(controls.target.y + zmid).toFixed(1)}`);
     }
-    q.set('detail', $('detail').value); q.set('tex', $('tex').value); q.set('exag', $('exag').value);
-    q.set('az', $('az').value); q.set('alt', $('alt').value);
+    q.set('detail', $('detail').value); q.set('tex', $('tex').value);
     q.set('cliffs', $('cliffs').value);
+    if (route.name) q.set('route', route.name);
+    else if (route.pts.length >= 2 && route.pts.length <= 40) q.set('pts', route.pts.map(p => `${p[0].toFixed(0)},${p[1].toFixed(0)}`).join(';'));
     if ($('wire').checked) q.set('wire', 1);
     history.replaceState(null, '', '?' + q.toString());
   }, 150);
@@ -668,14 +692,227 @@ $('copyLink').onclick = async () => {
   }
 }
 
+// ---- Route planning ---------------------------------------------------------
+// Waypoints live in UTM metres (E, N). The drawn line is draped on the heightfield,
+// coloured by slope, and the stats come from the draped profile. Routes persist in
+// localStorage and round-trip through GPX (WGS84) for Gaia GPS / GPS devices.
+const route = { pts: [], edit: false, sel: -1, drag: null, name: '' };
+const rtGroup = new THREE.Group(); scene.add(rtGroup);
+const rtMat = new LineMaterial({ vertexColors: true, linewidth: 4, worldUnits: false, depthTest: true });
+rtMat.resolution.set(innerWidth, innerHeight);
+let rtLine = null;
+const wpGeo = new THREE.SphereGeometry(1, 12, 8);
+const wpMatN = new THREE.MeshBasicMaterial({ color: 0xffffff }), wpMatS = new THREE.MeshBasicMaterial({ color: 0xff9f1c });
+const markers = [];
+const toWorld = (E, N) => ({ x: E - meta.bounds.left - sizeX / 2, z: meta.bounds.top - N - sizeY / 2 });
+function surfaceY(x, zz) { const e = sampleZ(x, zz); return (Number.isNaN(e) ? meta.zmin : e) - zmid; }
+
+// Drape each segment at ~2 m spacing; returns [{x, y(world), z, d(dist m), ele}]
+let draped = [];
+function drape() {
+  draped = [];
+  let d = 0, prev = null;
+  for (let i = 0; i < route.pts.length; i++) {
+    const a = toWorld(...route.pts[i]);
+    if (prev) {
+      const len = Math.hypot(a.x - prev.x, a.z - prev.z), n = Math.max(1, Math.ceil(len / 2));
+      for (let k = 1; k <= n; k++) {
+        const x = prev.x + (a.x - prev.x) * k / n, zz = prev.z + (a.z - prev.z) * k / n;
+        const y = surfaceY(x, zz), last = draped[draped.length - 1];
+        d += Math.hypot(x - last.x, zz - last.z, y - last.y);
+        draped.push({ x, y, z: zz, d, ele: y + zmid });
+      }
+    } else draped.push({ x: a.x, y: surfaceY(a.x, a.z), z: a.z, d: 0, ele: surfaceY(a.x, a.z) + zmid });
+    prev = a;
+  }
+}
+function slopeColor(deg, out) {   // green -> yellow -> red -> magenta
+  const t = Math.min(deg / 45, 1);
+  const c = t < 0.5 ? new THREE.Color().setHSL(0.33 - t * 0.5, 0.9, 0.5) : new THREE.Color().setHSL(0.08 - (t - 0.5) * 0.3, 0.9, 0.5);
+  if (deg > 45) c.setHSL(0.85, 0.9, 0.55);
+  out.push(c.r, c.g, c.b);
+}
+function rebuildRoute() {
+  drape();
+  if (rtLine) { rtGroup.remove(rtLine); rtLine.geometry.dispose(); rtLine = null; }
+  for (const m of markers) rtGroup.remove(m);
+  markers.length = 0;
+  if (draped.length >= 2) {
+    const pos = [], col = [];
+    for (let i = 0; i < draped.length; i++) {
+      const p = draped[i]; pos.push(p.x, p.y + 2, p.z);
+      const q = draped[Math.max(0, i - 1)], r = draped[Math.min(draped.length - 1, i + 1)];
+      const run = Math.hypot(r.x - q.x, r.z - q.z), deg = run > 0 ? Math.atan(Math.abs(r.y - q.y) / run) * 180 / Math.PI : 0;
+      slopeColor(deg, col);
+    }
+    const g = new LineGeometry(); g.setPositions(pos); g.setColors(col);
+    rtLine = new Line2(g, rtMat); rtLine.computeLineDistances(); rtLine.frustumCulled = false;
+    rtGroup.add(rtLine);
+  }
+  route.pts.forEach((p, i) => {
+    const w = toWorld(...p), m = new THREE.Mesh(wpGeo, i === route.sel ? wpMatS : wpMatN);
+    m.position.set(w.x, surfaceY(w.x, w.z) + 2, w.z); m.userData.i = i; rtGroup.add(m); markers.push(m);
+  });
+  updateRouteStats();
+}
+function updateRouteStats() {
+  const el = $('rtStats'), cv = $('rtProfile'), ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (draped.length < 2) { el.textContent = route.pts.length ? '1 waypoint' : 'No route.'; return; }
+  // Gain/loss with 3 m hysteresis so 1 m lidar noise doesn't inflate the totals.
+  let gain = 0, loss = 0, ref = draped[0].ele, maxSlope = 0;
+  for (const p of draped) {
+    if (p.ele > ref + 3) { gain += p.ele - ref; ref = p.ele; } else if (p.ele < ref - 3) { loss += ref - p.ele; ref = p.ele; }
+  }
+  for (let i = 10; i < draped.length; i++) {   // steepest 20 m stretch
+    const a = draped[i - 10], b = draped[i], run = Math.hypot(b.x - a.x, b.z - a.z);
+    if (run > 1) maxSlope = Math.max(maxSlope, Math.atan(Math.abs(b.ele - a.ele) / run) * 180 / Math.PI);
+  }
+  const total = draped[draped.length - 1].d;
+  el.innerHTML = `${(total / 1000).toFixed(2)} km (${(total / 1609.34).toFixed(2)} mi) · ↑ ${gain.toFixed(0)} m (${(gain * 3.281).toFixed(0)} ft) · ↓ ${loss.toFixed(0)} m · steepest 20 m: ${maxSlope.toFixed(0)}°` +
+    ` · ${route.pts.length} waypoints` + (route.name ? ` · <b>${route.name}</b>` : '');
+  // Profile
+  const W_ = cv.width, H_ = cv.height, lo = Math.min(...draped.map(p => p.ele)), hi = Math.max(...draped.map(p => p.ele)), rng = Math.max(hi - lo, 20);
+  for (let i = 1; i < draped.length; i++) {
+    const a = draped[i - 1], b = draped[i], run = Math.hypot(b.x - a.x, b.z - a.z);
+    const deg = run > 0 ? Math.atan(Math.abs(b.ele - a.ele) / run) * 180 / Math.PI : 0, c = []; slopeColor(deg, c);
+    ctx.strokeStyle = `rgb(${c[0] * 255},${c[1] * 255},${c[2] * 255})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(a.d / total * W_, H_ - 4 - (a.ele - lo) / rng * (H_ - 10)); ctx.lineTo(b.d / total * W_, H_ - 4 - (b.ele - lo) / rng * (H_ - 10)); ctx.stroke();
+  }
+  ctx.fillStyle = '#9ab'; ctx.font = '10px system-ui'; ctx.fillText(`${hi.toFixed(0)} m`, 2, 10); ctx.fillText(`${lo.toFixed(0)} m`, 2, H_ - 1);
+}
+function setEdit(on) {
+  route.edit = on; $('rtEdit').textContent = on ? 'Done' : (route.pts.length ? 'Edit route' : 'Start route');
+  $('rtHelp').style.display = on ? '' : 'none';
+  if (!on) { route.sel = -1; rebuildRoute(); }
+}
+$('rtEdit').onclick = () => setEdit(!route.edit);
+$('rtUndo').onclick = () => { route.pts.pop(); route.sel = -1; rebuildRoute(); };
+$('rtClear').onclick = () => { route.pts = []; route.sel = -1; route.name = ''; rebuildRoute(); };
+setEdit(false);
+
+// Waypoint picking (markers only; the terrain itself uses the heightfield march)
+const wpRay = new THREE.Raycaster();
+function pickMarker(clientX, clientY) {
+  ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
+  wpRay.setFromCamera(ndc, camera); wpRay.params.Mesh = {};
+  const hit = wpRay.intersectObjects(markers, false)[0];
+  return hit ? hit.object.userData.i : -1;
+}
+function routePointerDown(ev) {   // returns true if the event was consumed
+  if (!route.edit || ground.active || ev.button !== 0) return false;
+  const i = pickMarker(ev.clientX, ev.clientY);
+  if (i < 0) return false;
+  route.sel = i; route.drag = i; controls.enabled = false; rebuildRoute();
+  return true;
+}
+function routePointerMove(ev) {
+  if (route.drag === null) return false;
+  const hit = pickTerrain(ev.clientX, ev.clientY);
+  if (hit) { const u = toUTM(hit); route.pts[route.drag] = [u.E, u.N]; rebuildRoute(); }
+  return true;
+}
+function routePointerUp(ev, wasClick) {
+  if (route.drag !== null) { route.drag = null; controls.enabled = !ground.active; return true; }
+  if (!route.edit || ground.active || !wasClick) return false;
+  const hit = pickTerrain(ev.clientX, ev.clientY);
+  if (!hit) return true;
+  const u = toUTM(hit); route.pts.push([u.E, u.N]); route.sel = -1; rebuildRoute();
+  return true;
+}
+addEventListener('keydown', e => {
+  if (route.edit && route.sel >= 0 && (e.key === 'Delete' || e.key === 'Backspace') && document.activeElement.tagName !== 'INPUT') {
+    route.pts.splice(route.sel, 1); route.sel = -1; rebuildRoute(); e.preventDefault();
+  }
+});
+// Keep markers a constant screen size and re-drape as finer tiles arrive.
+let drapeTick = 0;
+function routeFrame() {
+  const focal = innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+  for (const m of markers) { const d = camera.position.distanceTo(m.position); m.scale.setScalar(Math.max(0.5, d * 7 / focal)); }
+  if (route.pts.length > 1 && ++drapeTick % 90 === 0) rebuildRoute();
+}
+
+// ---- Saved routes ----
+const store = () => JSON.parse(localStorage.getItem('routes') || '{}');
+function refreshList() {
+  const sel = $('rtList'), names = Object.keys(store()).sort();
+  sel.innerHTML = '<option value="">Saved routes…</option>' + names.map(n => `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`).join('');
+  sel.value = route.name && names.includes(route.name) ? route.name : '';
+}
+$('rtSave').onclick = () => {
+  if (route.pts.length < 2) return;
+  const name = prompt('Route name', route.name || 'Route ' + (Object.keys(store()).length + 1));
+  if (!name) return;
+  const all = store(); all[name] = { pts: route.pts, saved: new Date().toISOString() };
+  localStorage.setItem('routes', JSON.stringify(all)); route.name = name; refreshList(); updateRouteStats(); syncUrl();
+};
+$('rtDelete').onclick = () => {
+  const name = $('rtList').value; if (!name || !confirm(`Delete "${name}"?`)) return;
+  const all = store(); delete all[name]; localStorage.setItem('routes', JSON.stringify(all));
+  if (route.name === name) route.name = ''; refreshList(); updateRouteStats(); syncUrl();
+};
+$('rtList').onchange = () => { const r = store()[$('rtList').value]; if (r) { route.pts = r.pts.map(p => [...p]); route.name = $('rtList').value; route.sel = -1; setEdit(false); syncUrl(); } };
+refreshList();
+
+// ---- GPX (WGS84) <-> UTM zone 13N on GRS80; the NAD83/WGS84 difference is ~1 m here ----
+const UTM = { a: 6378137, f: 1 / 298.257222101, k0: 0.9996, lon0: -105, fe: 500000 };
+function utmToLatLon(E, N) {
+  const { a, f, k0, lon0, fe } = UTM, e2 = f * (2 - f), ep2 = e2 / (1 - e2), e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+  const M = N / k0, mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 ** 3 / 256));
+  const phi1 = mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * Math.sin(2 * mu) + (21 * e1 * e1 / 16 - 55 * e1 ** 4 / 32) * Math.sin(4 * mu) + (151 * e1 ** 3 / 96) * Math.sin(6 * mu);
+  const sp = Math.sin(phi1), cp = Math.cos(phi1), tp = Math.tan(phi1);
+  const N1 = a / Math.sqrt(1 - e2 * sp * sp), T1 = tp * tp, C1 = ep2 * cp * cp, R1 = a * (1 - e2) / (1 - e2 * sp * sp) ** 1.5, D = (E - fe) / (N1 * k0);
+  const lat = phi1 - (N1 * tp / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * D ** 4 / 24 + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * D ** 6 / 720);
+  const lon = lon0 * Math.PI / 180 + (D - (1 + 2 * T1 + C1) * D ** 3 / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * D ** 5 / 120) / cp;
+  return [lat * 180 / Math.PI, lon * 180 / Math.PI];
+}
+function latLonToUtm(lat, lon) {
+  const { a, f, k0, lon0, fe } = UTM, e2 = f * (2 - f), ep2 = e2 / (1 - e2), phi = lat * Math.PI / 180, dl = (lon - lon0) * Math.PI / 180;
+  const sp = Math.sin(phi), cp = Math.cos(phi), tp = Math.tan(phi), Nn = a / Math.sqrt(1 - e2 * sp * sp), T = tp * tp, C = ep2 * cp * cp, A = cp * dl;
+  const M = a * ((1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 ** 3 / 256) * phi - (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 ** 3 / 1024) * Math.sin(2 * phi) + (15 * e2 * e2 / 256 + 45 * e2 ** 3 / 1024) * Math.sin(4 * phi) - (35 * e2 ** 3 / 3072) * Math.sin(6 * phi));
+  const E = fe + k0 * Nn * (A + (1 - T + C) * A ** 3 / 6 + (5 - 18 * T + T * T + 72 * C - 58 * ep2) * A ** 5 / 120);
+  const N = k0 * (M + Nn * tp * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * A ** 4 / 24 + (61 - 58 * T + T * T + 600 * C - 330 * ep2) * A ** 6 / 720));
+  return [E, N];
+}
+$('rtExport').onclick = () => {
+  if (draped.length < 2) return;
+  const name = route.name || 'route', esc = t => t.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  let g = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="mountains viewer" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${esc(name)}</name><time>${new Date().toISOString()}</time></metadata>\n`;
+  route.pts.forEach((p, i) => { const [la, lo] = utmToLatLon(...p), w = toWorld(...p); g += `<wpt lat="${la.toFixed(7)}" lon="${lo.toFixed(7)}"><ele>${(surfaceY(w.x, w.z) + zmid).toFixed(1)}</ele><name>WP${i + 1}</name></wpt>\n`; });
+  g += `<trk><name>${esc(name)}</name><trkseg>\n`;
+  for (let i = 0; i < draped.length; i += 5) { const u = toUTM(draped[i]), [la, lo] = utmToLatLon(u.E, u.N); g += `<trkpt lat="${la.toFixed(7)}" lon="${lo.toFixed(7)}"><ele>${draped[i].ele.toFixed(1)}</ele></trkpt>\n`; }
+  g += `</trkseg></trk>\n</gpx>\n`;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([g], { type: 'application/gpx+xml' })); a.download = name.replace(/[^\w.-]+/g, '_') + '.gpx'; a.click();
+};
+$('rtImportBtn').onclick = () => $('rtImport').click();
+$('rtImport').onchange = async () => {
+  const f = $('rtImport').files[0]; if (!f) return;
+  const doc = new DOMParser().parseFromString(await f.text(), 'application/xml');
+  let pts = [...doc.querySelectorAll('rtept')]; if (pts.length < 2) pts = [...doc.querySelectorAll('trkpt')]; if (pts.length < 2) pts = [...doc.querySelectorAll('wpt')];
+  if (pts.length < 2) { alert('No route, track, or waypoints found in that GPX.'); return; }
+  const step = Math.max(1, Math.floor(pts.length / 150));   // keep the route editable
+  const sel = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
+  route.pts = sel.map(p => latLonToUtm(parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))));
+  route.name = (doc.querySelector('trk > name, rte > name, metadata > name')?.textContent || f.name.replace(/\.gpx$/i, '')).trim();
+  route.sel = -1; setEdit(false); $('rtImport').value = '';
+  const w = toWorld(...route.pts[0]); controls.target.set(w.x, surfaceY(w.x, w.z), w.z); camera.position.set(w.x - 3000, surfaceY(w.x, w.z) + 2500, w.z + 3000); controls.update();
+};
+{
+  const qs = new URLSearchParams(location.search), r = qs.get('route'), pts = qs.get('pts');
+  if (r && store()[r]) { route.pts = store()[r].pts.map(p => [...p]); route.name = r; refreshList(); rebuildRoute(); }
+  else if (pts) { route.pts = pts.split(';').map(t => t.split(',').map(Number)).filter(p => p.length === 2 && p.every(Number.isFinite)); rebuildRoute(); }
+}
+
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
+  rtMat.resolution.set(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
 $('status').remove();
 renderer.setAnimationLoop(() => {
-  walk();
+  walk(); routeFrame();
   if (!ground.active) controls.update();
   camera.updateMatrixWorld();
   updateLOD();
