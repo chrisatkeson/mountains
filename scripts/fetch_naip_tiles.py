@@ -17,7 +17,7 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 SERVICE = "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/exportImage"
 PX = 1024          # pixels per tile side
-BLOCK = 3          # tiles per request side (3 * 1024 = 3072 px, under the 4000 px service cap)
+BLOCK = 2          # tiles per request side (2 * 1024 = 2048 px; larger requests time out on the server)
 
 
 def fetch(bbox, size, sr, attempts=6):

@@ -37,7 +37,8 @@
       <option value="8">Low</option>
       <option value="4">Medium</option>
       <option value="2">High</option>
-      <option value="1" selected>Full (1 m near camera)</option>
+      <option value="1">Full (1 m near camera)</option>
+      <option value="auto" selected>Auto (adapts to frame rate)</option>
     </select>
   </label>
   <label><span>Texture</span>
@@ -102,7 +103,8 @@ const $ = id => document.getElementById(id);
 const status = msg => { const s = $('status'); if (s) s.textContent = msg; };
 const canvas = $('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const MAX_PR = Math.min(devicePixelRatio, 1.5);
+renderer.setPixelRatio(MAX_PR);
 canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); $('readout').textContent = 'WebGL context lost (out of GPU memory?). Reload the page.'; });
 const scene = new THREE.Scene();
 const SKY = new THREE.Color(0x9fc3ec), DARK = new THREE.Color(0x0b0d10);
@@ -211,9 +213,6 @@ const frag = `
     bool inside = tiled || all(greaterThanEqual(uv, vec2(0.0))) && all(lessThanEqual(uv, vec2(1.0)));
     bool haveMap = useMap && inside;
     vec3 col = haveMap ? texture(map, uv).rgb : baseColor;
-    // Coarse imagery tiles built before neighbouring area existed hold a flat placeholder
-    // grey there; treat it as "no imagery" so the terrain shows lit relief instead.
-    if (haveMap && tiled && distance(col, vec3(0.157, 0.173, 0.204)) < 0.03) { haveMap = false; col = baseColor; }
     float light = ambI + sunI * max(dot(n, sunDir), 0.0);
     if (lit || !haveMap) col *= light;      // areas without imagery are always lit so relief still reads
     if (cliffs) {
@@ -284,7 +283,7 @@ const trisPerTile = grid.index.count / 3;
 
 // ---- Tile cache and streaming ----------------------------------------------
 const cache = new Map();            // key -> { L, tx, ty, state, data, mesh, sphere, lastUsed }
-const MAX_TILES = 700, MAX_INFLIGHT = 8;
+const MAX_TILES = 450, MAX_INFLIGHT = 8;
 let inflight = 0, frame = 0;
 const keyOf = (L, tx, ty) => `${L}/${tx}_${ty}`;
 function tileOrigin(L, tx, ty) {
@@ -341,7 +340,7 @@ function evict(t) {
 
 // ---- Imagery tiles (same layout as terrain tiles, 1024 px each) -------------
 const imgCache = new Map();          // key -> { state: idle|loading|ready|missing, tex, lastUsed }
-const MAX_IMG = 300, MAX_IMG_INFLIGHT = 6;
+const MAX_IMG = 160, MAX_IMG_INFLIGHT = 6;
 let imgInflight = 0, imgWanted = [], texMode = 'naip';
 const imgLoader = new THREE.TextureLoader();
 function imgEntry(key) {
@@ -388,6 +387,42 @@ function serviceImagery() {
 
 const frustum = new THREE.Frustum(), pv = new THREE.Matrix4();
 let drawn = [], wanted = [], lastStats = 0;
+
+// ---- Adaptive detail -------------------------------------------------------
+// In Auto mode the screen size of a terrain cell (in pixels) floats between AUTO_MIN and AUTO_MAX.
+// Slow frames push it up (fewer, coarser tiles); fast frames let it drift back down. If that alone
+// is not enough the render resolution drops a step too. A fixed menu value disables all of this.
+const AUTO_MIN = 1.5, AUTO_MAX = 8, SLOW_MS = 24, FAST_MS = 13, TRI_BUDGET = 30e6;
+let autoPx = 2.5, frameMs = 16, lastTick = performance.now(), lastAdjust = 0, pr = MAX_PR, slowRun = 0, fastRun = 0;
+const lastCam = new THREE.Vector3(), lastQuat = new THREE.Quaternion();
+function detailTarget() {
+  const v = $('detail').value;
+  if (v !== 'auto') return parseFloat(v);
+  const now = performance.now();
+  frameMs = 0.9 * frameMs + 0.1 * Math.min(now - lastTick, 100);
+  lastTick = now;
+  const moving = camera.position.distanceToSquared(lastCam) > 1e-6 || camera.quaternion.angleTo(lastQuat) > 1e-5;
+  lastCam.copy(camera.position); lastQuat.copy(camera.quaternion);
+  if (now - lastAdjust > 1000) {
+    lastAdjust = now;
+    const tris = drawn.length * trisPerTile, loading = inflight + imgInflight > 0;
+    // Frame times while tiles are uploading are not representative, so they never count.
+    slowRun = !loading && (frameMs > SLOW_MS || tris > TRI_BUDGET) ? slowRun + 1 : 0;
+    fastRun = !loading && frameMs < FAST_MS && tris < TRI_BUDGET * 0.6 ? fastRun + 1 : 0;
+    // Detail only changes while the view is moving (a still scene must never pop), and only after
+    // the condition has held for a few seconds, so the target settles instead of oscillating.
+    if (slowRun >= 2 && (moving || tris > TRI_BUDGET)) {
+      slowRun = 0;
+      if (autoPx < AUTO_MAX) autoPx = Math.min(AUTO_MAX, autoPx * 1.15);
+      else if (pr > 1) { pr = 1; renderer.setPixelRatio(pr); }
+    } else if (fastRun >= 4 && moving) {
+      fastRun = 0;
+      if (pr < MAX_PR && autoPx <= AUTO_MAX * 0.75) { pr = MAX_PR; renderer.setPixelRatio(pr); }
+      else if (autoPx > AUTO_MIN) autoPx = Math.max(AUTO_MIN, autoPx / 1.1);
+    }
+  }
+  return autoPx;
+}
 function childrenOf(t) {
   const out = [];
   if (t.L === 0) return out;
@@ -404,9 +439,14 @@ function visit(t, targetPx, focal) {
   t.lastUsed = frame;
   const d = Math.max(1, camera.position.distanceTo(t.sphere.center) - t.sphere.radius);
   const pxPerCell = levels[t.L].cell * focal / d;
-  if (t.L > 0 && pxPerCell > targetPx) {
+  // Far terrain tolerates coarser cells: the bias doubles the target every ~15 km, so the horizon
+  // never costs as much as the foreground.
+  // Hysteresis: once split, a tile only merges back when its cells shrink to 80% of the threshold,
+  // so a tile sitting at the boundary does not flicker between itself and its children.
+  const thresh = targetPx * (1 + d / 15000) * (t.splitFrame === frame - 1 ? 0.8 : 1);
+  if (t.L > 0 && pxPerCell > thresh) {
     const kids = childrenOf(t);
-    if (kids.every(k => k.state === 'ready' || k.state === 'empty')) { for (const k of kids) visit(k, targetPx, focal); return; }
+    if (kids.every(k => k.state === 'ready' || k.state === 'empty')) { t.splitFrame = frame; for (const k of kids) visit(k, targetPx, focal); return; }
     for (const k of kids) if (k.state === 'idle') wanted.push({ t: k, d });
   }
   if (t.state === 'ready') { drawn.push(t); assignTexture(t, d); }
@@ -416,7 +456,7 @@ function updateLOD() {
   frame++;
   pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
   frustum.setFromProjectionMatrix(pv);
-  const targetPx = parseFloat($('detail').value);
+  const targetPx = detailTarget();
   const focal = innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
   for (const t of drawn) t.mesh.visible = false;
   drawn = []; wanted = [];
@@ -451,7 +491,9 @@ function updateLOD() {
     const lv = Object.entries(byLevel).sort((a, b) => a[0] - b[0]).map(([c, n]) => `${n}@${c}m`).join(' ');
     const imgReady = [...imgCache.values()].filter(e => e.state === 'ready').length;
     $('stats').textContent = `${drawn.length} tiles drawn (${lv}), ${(drawn.length * trisPerTile / 1e6).toFixed(1)} M triangles, ` +
+      `${frameMs.toFixed(0)} ms/frame, detail ${autoPx.toFixed(1)} px/cell @${pr}x, ` +
       `${cache.size} cached, ${inflight} loading. Imagery tiles: ${imgReady} ready, ${imgInflight} loading.`;
+    if (DEBUG) console.log('STATS ' + $('stats').textContent);
   }
 }
 
@@ -696,7 +738,8 @@ $('copyLink').onclick = async () => {
 { // Restore settings from the URL before the camera is placed.
   const qs = new URLSearchParams(location.search);
   const setv = (id, key, fn) => { const v = qs.get(key); if (v !== null && $(id)) { fn ? fn(v) : ($(id).value = v); $(id).dispatchEvent(new Event(id === 'exag' || id === 'az' || id === 'alt' ? 'input' : 'change')); } };
-  setv('detail', 'detail'); setv('tex', 'tex'); setv('exag', 'exag'); setv('az', 'az'); setv('alt', 'alt');
+  setv('detail', 'detail', v => { if (v !== '1') $('detail').value = v; });   // old links saved the fixed '1'; keep Auto for those
+  setv('tex', 'tex'); setv('exag', 'exag'); setv('az', 'az'); setv('alt', 'alt');
   setv('cliffs', 'cliffs');
   setv('wire', 'wire', v => { $('wire').checked = v === '1'; });
 }

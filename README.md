@@ -137,12 +137,18 @@ works too, but needs a hard reload (Cmd+Shift+R) after any rebuild.
 
 Open http://localhost:8000. The viewer walks a quadtree over the tile pyramid
 every frame: a tile is split into its four children when one of its cells would
-cover more than the "Mesh detail" target in screen pixels, and only once all
-four children have loaded. Tiles stream in nearest-first (8 in flight), up to
-700 stay cached, and each is drawn with one shared grid geometry whose vertex
-shader reads elevation from the tile's own heightmap texture. Normals come from
-neighbouring texels, so lighting is always at the tile's full resolution. On
-"Full" the terrain within about a kilometre of the camera is drawn at 1 m. Drag to orbit, right-drag to pan, scroll to zoom,
+cover more than a target number of screen pixels, and only once all four
+children have loaded. The target adapts to the machine: it starts at 2.5 px per
+cell and floats between 1.5 and 8 as frame times go above ~24 ms or below
+~13 ms, with a triangle budget of 30 M; if the coarsest setting is still slow
+the render resolution drops to 1x. Far tiles also tolerate coarser cells (the
+target doubles every ~15 km of distance), so the horizon costs little. Tiles
+stream in nearest-first (8 in flight), up to 450 stay cached, and each is drawn
+with one shared grid geometry whose vertex shader reads elevation from the
+tile's own heightmap texture. Normals come from neighbouring texels, so lighting
+is always at the tile's full resolution. Terrain near the camera is still drawn
+at 1 m. `?debug` logs the live tile count, frame time and detail target to the
+console. Drag to orbit, right-drag to pan, scroll to zoom,
 `R` to reset, `T` for a top-down view. The panel controls
 texture mode, cliff shading and wireframe. Hovering
 shows elevation and UTM coordinates sampled from the full heightmap.
